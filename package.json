@@ -1,0 +1,22 @@
+{
+  "name": "deluxnet",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api:dev": "yarn workspace @deluxnet/api dev",
+    "api:build": "yarn workspace @deluxnet/api build",
+    "web:dev": "yarn workspace @deluxnet/web dev",
+    "web:build": "yarn workspace @deluxnet/web build",
+    "mobile:start": "yarn workspace @deluxnet/mobile start",
+    "prisma:generate": "yarn workspace @deluxnet/api prisma:generate",
+    "prisma:migrate": "yarn workspace @deluxnet/api prisma:migrate"
+  },
+  "packageManager": "yarn@4.3.1",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
