@@ -174,24 +174,34 @@ model TechnicianProfile {
 
 // ─── Customers (stub – to be expanded) ────────────
 
-model Customer {
-  id             String         @id @default(cuid())
-  firstName      String
-  lastName       String
-  phone          String?
-  email          String?
-  addressLine    String
-  locality       String?
-  municipality   String?
-  status         CustomerStatus @default(ACTIVO)
-  pppoeUsername  String?
-  currentBalance Decimal        @default(0) @db.Decimal(12, 2)
-  signupDate     DateTime
-  billingCutoffDay Int
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+enum MikrotikSuspensionType {
+  PPPOE
+  QUEUE
+  ADDRESS_LIST
+}
 
-  payments Payment[]
+model Customer {
+  id               String          @id @default(cuid())
+  firstName        String
+  lastName         String
+  phone            String?
+  email            String?
+  addressLine      String
+  locality         String?
+  municipality     String?
+  status           CustomerStatus  @default(ACTIVO)
+  pppoeUsername    String?
+  pppoePassword    String?
+  ipAddress        String?
+  currentBalance   Decimal         @default(0) @db.Decimal(12, 2)
+  signupDate       DateTime
+  billingCutoffDay Int
+  mikrotikProfileId String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  mikrotikProfile  MikrotikProfile? @relation(fields: [mikrotikProfileId], references: [id], onDelete: SetNull)
+  payments         Payment[]
 }
 
 // ─── Payments (stub – to be expanded) ─────────────
@@ -237,4 +247,43 @@ model OutboxEvent {
 
   @@index([userId, status, occurredAt])
   @@index([aggregateType, aggregateId])
+}
+
+// ─── MikroTik Integration ─────────────────────────
+
+model MikrotikProfile {
+  id              String                  @id @default(cuid())
+  tenantId        String?
+  name            String                  @unique
+  host            String
+  port            Int                     @default(8728)
+  username        String
+  password        String
+  suspensionType  MikrotikSuspensionType  @default(PPPOE)
+  pppoeService    String?
+  addressListName String?                 @default("suspended")
+  active          Boolean                 @default(true)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  commandLogs     MikrotikCommandLog[]
+  customers       Customer[]
+}
+
+model MikrotikCommandLog {
+  id              String          @id @default(cuid())
+  profileId       String
+  customerId      String?
+  command         String
+  payload         Json
+  status          String          // "PENDING", "SUCCESS", "FAILED"
+  attempts        Int             @default(0)
+  errorMessage    String?
+  executedAt      DateTime?
+  createdAt       DateTime        @default(now())
+
+  profile         MikrotikProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([command, status])
+  @@index([createdAt])
 }

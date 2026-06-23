@@ -6,6 +6,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { CollectorsModule } from './modules/collectors/collectors.module';
+import { CustomersModule } from './modules/customers/customers.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { SyncModule } from './modules/sync/sync.module';
+import { MikrotikModule } from './modules/mikrotik/mikrotik.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { ActiveUserGuard } from './common/guards/active-user.guard';
@@ -24,6 +28,10 @@ import { ActiveUserGuard } from './common/guards/active-user.guard';
     AuthModule,
     UsersModule,
     CollectorsModule,
+    CustomersModule,
+    PaymentsModule,
+    SyncModule,
+    MikrotikModule,
   ],
   providers: [
     // Rate-limit guard applied globally

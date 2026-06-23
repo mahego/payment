@@ -22,7 +22,7 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use((config) => {
   if (_accessToken) {
     config.headers = config.headers ?? {};
-    config.headers['Authorization'] = `******;
+    config.headers['Authorization'] = `Bearer ${_accessToken}`;
   }
   return config;
 });
@@ -54,7 +54,7 @@ api.interceptors.response.use(
       try {
         const token = await _refreshPromise;
         original.headers = original.headers ?? {};
-        original.headers['Authorization'] = `******;
+        original.headers['Authorization'] = `Bearer ${token}`;
         return api(original);
       } catch {
         setAccessToken(null);

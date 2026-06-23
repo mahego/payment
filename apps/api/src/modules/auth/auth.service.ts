@@ -10,7 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { User, UserStatus } from '@prisma/client';
+import { Prisma, User, UserStatus } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
@@ -111,7 +111,7 @@ export class AuthService {
         action,
         userId,
         entityType: 'auth',
-        metadata: meta ?? null,
+        metadata: (meta ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         ipAddress,
         userAgent,
       },
@@ -224,12 +224,17 @@ export class AuthService {
       },
     });
 
+    let deviceName = dto.deviceName;
+    if (!deviceName && userAgent) {
+      deviceName = this.parseDeviceName(userAgent);
+    }
+
     const accessToken = this.generateAccessToken(user);
     const { rawToken: refreshToken, session } = await this.generateRefreshToken(
       user,
       ipAddress,
       userAgent,
-      dto.deviceName,
+      deviceName,
     );
 
     await this.recordAttempt(dto.email, true, user.id, ipAddress, userAgent);
@@ -273,12 +278,18 @@ export class AuthService {
     });
 
     const accessToken = this.generateAccessToken(user);
+    
+    let deviceName = matchedSession.deviceName;
+    if (!deviceName && userAgent) {
+      deviceName = this.parseDeviceName(userAgent);
+    }
+
     const { rawToken: newRefreshToken, session: newSession } =
       await this.generateRefreshToken(
         user,
         ipAddress,
-        userAgent ?? matchedSession.deviceName ?? undefined,
-        matchedSession.deviceName ?? undefined,
+        userAgent ?? undefined,
+        deviceName ?? undefined,
       );
 
     await this.auditLog(
@@ -447,7 +458,7 @@ export class AuthService {
   // ── Sessions ─────────────────────────────────────
 
   async getActiveSessions(userId: string) {
-    return this.prisma.session.findMany({
+    const sessions = await this.prisma.session.findMany({
       where: {
         userId,
         revokedAt: null,
@@ -463,6 +474,11 @@ export class AuthService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return sessions.map((s) => ({
+      ...s,
+      deviceName: s.deviceName || (s.userAgent ? this.parseDeviceName(s.userAgent) : 'Dispositivo desconocido'),
+    }));
   }
 
   async revokeSession(userId: string, sessionId: string, ipAddress?: string) {
@@ -479,4 +495,35 @@ export class AuthService {
     await this.auditLog('session.revoked', userId, { sessionId }, ipAddress);
     return { message: 'Session revoked' };
   }
+
+  private parseDeviceName(ua: string): string {
+    if (!ua) return 'Dispositivo desconocido';
+    if (ua.includes('PostmanRuntime')) return 'Postman Client';
+
+    let browser = '';
+    let os = '';
+
+    if (ua.includes('Chrome')) browser = 'Chrome';
+    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+    else if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('Edg')) browser = 'Edge';
+    else if (ua.includes('Opera') || ua.includes('OPR')) browser = 'Opera';
+
+    if (ua.includes('Windows')) os = 'Windows';
+    else if (ua.includes('Macintosh') || ua.includes('Mac OS') || ua.includes('Mac OS X')) os = 'macOS';
+    else if (ua.includes('Linux') && !ua.includes('Android')) os = 'Linux';
+    else if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('iPhone')) os = 'iPhone';
+    else if (ua.includes('iPad')) os = 'iPad';
+
+    if (browser && os) return `${browser} en ${os}`;
+    if (browser) return browser;
+    if (os) return `Dispositivo ${os}`;
+
+    if (ua.length > 30) {
+      return ua.substring(0, 30) + '...';
+    }
+    return ua;
+  }
 }
+

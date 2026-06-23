@@ -1,5 +1,20 @@
 import { create } from 'zustand';
+import Cookies from 'js-cookie';
 import api, { setAccessToken } from '@/lib/api';
+
+const SESSION_COOKIE = 'deluxnet_session';
+
+const markSession = () => {
+  Cookies.set(SESSION_COOKIE, '1', {
+    path: '/',
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+  });
+};
+
+const clearSession = () => {
+  Cookies.remove(SESSION_COOKIE, { path: '/' });
+};
 
 export type Role =
   | 'SUPER_ADMIN'
@@ -24,7 +39,7 @@ interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, deviceName?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
   fetchMe: () => Promise<void>;
@@ -39,15 +54,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
 
   // ── Login ──────────────────────────────────────────────────────────────────
-  login: async (email, password) => {
+  login: async (email, password, deviceName) => {
     set({ isLoading: true });
     try {
       const res = await api.post<{ accessToken: string; sessionId: string }>(
         '/auth/login',
-        { email, password },
+        { email, password, deviceName },
       );
-      setAccessToken(res.data.accessToken);
-      set({ sessionId: res.data.sessionId });
+      setAccessToken(res.data.accessToken);      markSession();      set({ sessionId: res.data.sessionId });
       await get().fetchMe();
       set({ isAuthenticated: true });
     } finally {
@@ -64,6 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       /* ignore */
     } finally {
       setAccessToken(null);
+      clearSession();
       set({ user: null, sessionId: null, isAuthenticated: false });
     }
   },
@@ -75,10 +90,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         '/auth/refresh',
       );
       setAccessToken(res.data.accessToken);
+      markSession();
       set({ sessionId: res.data.sessionId, isAuthenticated: true });
       await get().fetchMe();
       return true;
     } catch {
+      clearSession();
       set({ user: null, sessionId: null, isAuthenticated: false });
       return false;
     }

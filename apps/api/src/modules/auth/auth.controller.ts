@@ -8,6 +8,7 @@ import {
   Res,
   HttpCode,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -95,9 +96,7 @@ export class AuthController {
       (req.headers['x-refresh-token'] as string | undefined);
 
     if (!rawToken) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({
-        message: 'Refresh token not provided',
-      });
+      throw new UnauthorizedException('Refresh token not provided');
     }
 
     const result = await this.authService.refresh(

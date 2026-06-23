@@ -63,7 +63,8 @@ export class CollectorsService {
     profileDto: CreateCollectorDto,
     actor: User,
   ) {
-    if (![Role.SUPER_ADMIN, Role.ADMIN].includes(actor.role)) {
+    const adminRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN];
+    if (!adminRoles.includes(actor.role)) {
       throw new ForbiddenException('Only admins can create collectors');
     }
 
@@ -88,7 +89,8 @@ export class CollectorsService {
 
   // ── Update profile ────────────────────────────────
   async update(id: string, dto: CreateCollectorDto, actor: User) {
-    if (![Role.SUPER_ADMIN, Role.ADMIN].includes(actor.role)) {
+    const adminRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN];
+    if (!adminRoles.includes(actor.role)) {
       throw new ForbiddenException('Only admins can update collectors');
     }
 
