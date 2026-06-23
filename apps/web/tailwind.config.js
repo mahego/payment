@@ -14,5 +14,8 @@ module.exports = {
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('liquidglass-tailwind').default || require('liquidglass-tailwind')
+  ],
 };
+

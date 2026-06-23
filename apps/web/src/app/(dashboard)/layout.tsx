@@ -234,8 +234,13 @@ export default function DashboardLayout({
       </aside>
 
       {/* Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="mx-auto max-w-7xl p-4 md:p-8">{children}</div>
+      <main className="flex-1 overflow-auto relative bg-slate-50/50">
+        {/* Background gradient blobs for Liquid Glass effect */}
+        <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse pointer-events-none" />
+        <div className="absolute top-1/3 right-10 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-25 animate-pulse pointer-events-none" />
+        <div className="absolute bottom-10 left-1/4 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse pointer-events-none" />
+        
+        <div className="mx-auto max-w-7xl p-4 md:p-8 relative z-10">{children}</div>
       </main>
     </div>
   );

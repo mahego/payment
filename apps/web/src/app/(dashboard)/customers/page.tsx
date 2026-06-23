@@ -105,7 +105,7 @@ export default function CustomersPage() {
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div key={idx} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:shadow-md">
+            <div key={idx} className="glass-card glass-shine bg-white/75 border-white/40 p-4 shadow-glass transition-all hover:shadow-glass-lg hover:-translate-y-0.5 duration-300">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.label}</span>
                 <span className={`rounded-xl p-1.5 ${stat.bg}`}>
@@ -129,13 +129,13 @@ export default function CustomersPage() {
             placeholder="Buscar por nombre, teléfono, email o PPPoE..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+            className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md pl-10 pr-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
           />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500"
+          className="rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90"
         >
           <option value="">Todos los estados</option>
           <option value="ACTIVO">ACTIVO</option>
@@ -174,11 +174,11 @@ export default function CustomersPage() {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-hidden glass-card glass-shine bg-white/70 border-white/40 shadow-glass p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/70 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-slate-100 bg-slate-100/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   <th className="px-6 py-4">Cliente</th>
                   <th className="px-6 py-4">Contacto</th>
                   <th className="px-6 py-4">Corte mensual</th>

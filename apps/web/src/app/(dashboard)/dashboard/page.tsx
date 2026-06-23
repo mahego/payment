@@ -128,7 +128,7 @@ export default function DashboardPage() {
           return (
             <div
               key={s.label}
-              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              className="glass-card glass-shine bg-white/75 border-white/40 p-5 shadow-glass transition-all hover:shadow-glass-lg hover:-translate-y-0.5 duration-300"
             >
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{s.label}</p>
@@ -148,7 +148,7 @@ export default function DashboardPage() {
       {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Recent Activity (Left Columns) */}
-        <section className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="lg:col-span-2 glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Activity className="h-4.5 w-4.5 text-indigo-500" />
@@ -200,7 +200,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Quick Actions (Right Column) */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+        <section className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass flex flex-col justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4">
               Accesos Rápidos
@@ -212,7 +212,7 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <Link
                 href="/customers/new"
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3 hover:bg-indigo-50 hover:text-indigo-600 transition"
+                className="flex items-center justify-between rounded-xl border border-slate-200/60 bg-white/40 p-3 shadow-glass hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-glass-lg hover:-translate-y-0.5 transition duration-300"
               >
                 <div className="flex items-center gap-2.5">
                   <span className="rounded-lg bg-white p-1.5 shadow-sm text-slate-600">
@@ -225,7 +225,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/payments/new"
-                className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3 hover:bg-indigo-50 hover:text-indigo-600 transition"
+                className="flex items-center justify-between rounded-xl border border-slate-200/60 bg-white/40 p-3 shadow-glass hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-glass-lg hover:-translate-y-0.5 transition duration-300"
               >
                 <div className="flex items-center gap-2.5">
                   <span className="rounded-lg bg-white p-1.5 shadow-sm text-slate-600">
@@ -238,7 +238,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="mt-8 rounded-xl bg-slate-50 p-4 border border-slate-100 text-center">
+          <div className="mt-8 rounded-xl bg-white/45 p-4 border border-slate-200/60 text-center shadow-glass">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estado del Servidor</span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 mt-1 border border-emerald-100">
               <span className="h-1 w-1 rounded-full bg-emerald-500" />

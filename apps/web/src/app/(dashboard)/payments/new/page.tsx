@@ -108,7 +108,7 @@ function NewPaymentForm() {
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
         <div className="border-b border-slate-100 pb-4 mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Registrar Nuevo Pago</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -136,7 +136,7 @@ function NewPaymentForm() {
             ) : (
               <select
                 {...register('customerId')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500"
+                className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90"
               >
                 <option value="">Selecciona un cliente de la lista...</option>
                 {customers?.map((c) => (
@@ -153,7 +153,7 @@ function NewPaymentForm() {
 
           {/* Balance Helper Box */}
           {selectedCustomerBalance !== null && (
-            <div className="rounded-xl bg-slate-50 p-4 border border-slate-100 flex items-center justify-between text-sm">
+            <div className="rounded-xl bg-white/45 p-4 border border-slate-200/60 shadow-glass flex items-center justify-between text-sm">
               <span className="text-slate-500">Saldo actual del cliente:</span>
               <span className={`font-bold ${selectedCustomerBalance > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
                 ${selectedCustomerBalance.toFixed(2)}
@@ -178,7 +178,7 @@ function NewPaymentForm() {
                     className={`flex flex-col items-center justify-center gap-2 rounded-xl border p-3 text-center transition-all ${
                       active
                         ? `${m.bg} border-indigo-500 ring-2 ring-indigo-500/10`
-                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                        : 'border-slate-200/60 bg-white/40 text-slate-600 hover:bg-white/60 hover:-translate-y-0.5 shadow-glass transition duration-300'
                     }`}
                   >
                     <Icon className="h-5 w-5" />
@@ -201,7 +201,7 @@ function NewPaymentForm() {
                   type="number"
                   step="0.01"
                   {...register('amount')}
-                  className="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md pl-8 pr-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10 font-semibold"
                   placeholder="0.00"
                 />
               </div>
@@ -218,7 +218,7 @@ function NewPaymentForm() {
               <input
                 type="text"
                 {...register('notes')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                 placeholder="Ej. Abono mensualidad Junio"
               />
             </div>
@@ -228,7 +228,7 @@ function NewPaymentForm() {
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-6">
             <Link
               href="/payments"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              className="rounded-xl border border-slate-200/60 bg-white/40 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-glass hover:bg-white/60 hover:-translate-y-0.5 transition duration-300"
             >
               Cancelar
             </Link>

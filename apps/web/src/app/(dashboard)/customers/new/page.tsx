@@ -78,7 +78,7 @@ export default function NewCustomerPage() {
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
         <div className="border-b border-slate-100 pb-4 mb-6">
           <h1 className="text-2xl font-bold text-slate-900">Registrar Nuevo Cliente</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -102,7 +102,7 @@ export default function NewCustomerPage() {
               <input
                 type="text"
                 {...register('firstName')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                 placeholder="Ej. Juan"
               />
               {errors.firstName && (
@@ -118,7 +118,7 @@ export default function NewCustomerPage() {
               <input
                 type="text"
                 {...register('lastName')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                 placeholder="Ej. Pérez"
               />
               {errors.lastName && (
@@ -134,7 +134,7 @@ export default function NewCustomerPage() {
               <input
                 type="text"
                 {...register('phone')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                 placeholder="Ej. +525512345678"
               />
             </div>
@@ -147,7 +147,7 @@ export default function NewCustomerPage() {
               <input
                 type="text"
                 {...register('email')}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                 placeholder="Ej. juan.perez@example.com"
               />
               {errors.email && (
@@ -167,7 +167,7 @@ export default function NewCustomerPage() {
                 <input
                   type="text"
                   {...register('addressLine')}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                   placeholder="Ej. Av. Hidalgo #45"
                 />
                 {errors.addressLine && (
@@ -184,7 +184,7 @@ export default function NewCustomerPage() {
                   <input
                     type="text"
                     {...register('locality')}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                    className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                     placeholder="Ej. San Ángel"
                   />
                 </div>
@@ -197,7 +197,7 @@ export default function NewCustomerPage() {
                   <input
                     type="text"
                     {...register('municipality')}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                    className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                     placeholder="Ej. Zapopan"
                   />
                 </div>
@@ -216,7 +216,7 @@ export default function NewCustomerPage() {
                 <input
                   type="text"
                   {...register('pppoeUsername')}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                   placeholder="Ej. user_cutoff_10"
                 />
               </div>
@@ -229,7 +229,7 @@ export default function NewCustomerPage() {
                 <input
                   type="number"
                   {...register('billingCutoffDay')}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                   placeholder="Ej. 5"
                 />
                 {errors.billingCutoffDay && (
@@ -246,7 +246,7 @@ export default function NewCustomerPage() {
                   type="number"
                   step="0.01"
                   {...register('currentBalance')}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                   placeholder="Ej. 0.00"
                 />
                 {errors.currentBalance && (
@@ -262,7 +262,7 @@ export default function NewCustomerPage() {
                 <input
                   type="date"
                   {...register('signupDate')}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
                 />
                 {errors.signupDate && (
                   <p className="text-rose-500 text-xs mt-1">{errors.signupDate.message}</p>
@@ -274,7 +274,7 @@ export default function NewCustomerPage() {
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-6">
             <Link
               href="/customers"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              className="rounded-xl border border-slate-200/60 bg-white/40 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-glass hover:bg-white/60 hover:-translate-y-0.5 transition duration-300"
             >
               Cancelar
             </Link>

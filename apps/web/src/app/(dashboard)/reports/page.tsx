@@ -111,7 +111,7 @@ export default function ReportsPage() {
       {/* Stats Summary Grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* Card 1: Total */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="glass-card glass-shine bg-white/75 border-white/40 p-5 shadow-glass transition hover:shadow-glass-lg hover:-translate-y-0.5 duration-300">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Cobranza Total Realizada</span>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl font-extrabold text-slate-900">${totalCollected.toFixed(2)}</span>
@@ -123,7 +123,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Card 2: Efectivo */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="glass-card glass-shine bg-white/75 border-white/40 p-5 shadow-glass transition hover:shadow-glass-lg hover:-translate-y-0.5 duration-300">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Recaudación en Caja / Efectivo</span>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl font-extrabold text-slate-900">${methodTotals.EFECTIVO.toFixed(2)}</span>
@@ -135,7 +135,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Card 3: Bancos */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="glass-card glass-shine bg-white/75 border-white/40 p-5 shadow-glass transition hover:shadow-glass-lg hover:-translate-y-0.5 duration-300">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Recaudación Bancos / Digital</span>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl font-extrabold text-slate-900">
@@ -154,7 +154,7 @@ export default function ReportsPage() {
         {/* Left Columns - Tables */}
         <div className="lg:col-span-2 space-y-6">
           {/* Card: Rendimiento de Cobradores */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
               <Users className="h-5 w-5 text-indigo-500" />
               Recaudación por Cobrador
@@ -187,7 +187,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Card: Historial Diario Reciente */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-2">
               <Calendar className="h-5 w-5 text-indigo-500" />
               Rendimiento Diario (Últimos 7 días activos)
@@ -221,7 +221,7 @@ export default function ReportsPage() {
         {/* Right Column - Methods breakdown */}
         <div className="space-y-6">
           {/* Card: Desglose Métodos */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4 flex items-center gap-2">
               <Layers className="h-4.5 w-4.5 text-indigo-500" />
               Métodos Utilizados
@@ -253,7 +253,7 @@ export default function ReportsPage() {
             </div>
 
             <div className="mt-8 border-t border-slate-100 pt-6">
-              <div className="rounded-xl bg-slate-50 p-4 text-center border border-slate-100">
+              <div className="rounded-xl bg-white/45 p-4 text-center border border-slate-200/60 shadow-glass">
                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Cierre total de caja</p>
                 <h4 className="text-xl font-extrabold text-slate-900 mt-1">${totalCollected.toFixed(2)}</h4>
                 <p className="text-[10px] text-slate-400 mt-1">Listo para ser conciliado con auditorías.</p>

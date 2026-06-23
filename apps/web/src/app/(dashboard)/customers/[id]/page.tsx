@@ -216,7 +216,7 @@ export default function CustomerDetailPage() {
         {/* Left Columns - Info cards */}
         <div className="lg:col-span-2 space-y-6">
           {/* Card: Ficha de Contacto */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4">
               Información de la Cuenta
             </h3>
@@ -305,7 +305,7 @@ export default function CustomerDetailPage() {
           </div>
 
           {/* Card: Historial de Pagos */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
               <h3 className="text-lg font-bold text-slate-900">Historial de Pagos</h3>
               <span className="text-xs text-slate-400 uppercase font-semibold">Últimos 10 transacciones</span>
@@ -357,10 +357,10 @@ export default function CustomerDetailPage() {
         {/* Right Column - Balance Summary */}
         <div className="space-y-6">
           {/* Card: Balance General */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Resumen Financiero</h3>
             
-            <div className="rounded-2xl bg-slate-50 p-5 text-center border border-slate-100">
+            <div className="rounded-2xl bg-white/45 p-5 text-center border border-slate-200/60 shadow-glass">
               <DollarSign className={`h-10 w-10 mx-auto rounded-full p-2 mb-2 ${
                 balance > 0 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'
               }`} />
@@ -394,7 +394,7 @@ export default function CustomerDetailPage() {
           </div>
 
           {/* Card: Control de MikroTik */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">Control de MikroTik</h3>
             
             {!customer.mikrotikProfile ? (
