@@ -60,43 +60,43 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">
           Correo electrónico
         </label>
         <div className="relative">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
             type="email"
             autoComplete="email"
             placeholder="tu@correo.com"
-            className="w-full rounded-lg border border-gray-300 bg-white px-10 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-white/10 bg-slate-950/40 backdrop-blur-md px-10 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-950/60 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all duration-300"
             aria-invalid={!!errors.email}
             {...register('email')}
           />
         </div>
         {errors.email && (
-          <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
+          <p className="mt-1 text-xs text-rose-400">{errors.email.message}</p>
         )}
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700">
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">
           Contraseña
         </label>
         <div className="relative">
-          <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
           <input
             type={showPassword ? 'text' : 'password'}
             autoComplete="current-password"
             placeholder="••••••••"
-            className="w-full rounded-lg border border-gray-300 bg-white px-10 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-white/10 bg-slate-950/40 backdrop-blur-md px-10 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-indigo-500 focus:bg-slate-950/60 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all duration-300"
             aria-invalid={!!errors.password}
             {...register('password')}
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
             tabIndex={-1}
           >
@@ -104,12 +104,12 @@ export function LoginForm() {
           </button>
         </div>
         {errors.password && (
-          <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+          <p className="mt-1 text-xs text-rose-400">{errors.password.message}</p>
         )}
       </div>
 
       {serverError && (
-        <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+        <div className="flex items-start gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-300 shadow-glass">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{serverError}</span>
         </div>
@@ -118,14 +118,14 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:scale-[0.98] px-4 py-2.5 text-sm font-bold text-white shadow-glass hover:shadow-glass-lg transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-55"
       >
         {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
         {isLoading ? 'Iniciando sesión…' : 'Iniciar sesión'}
       </button>
 
-      <p className="text-center text-sm text-gray-500">
-        <a href="/forgot-password" className="text-primary hover:underline">
+      <p className="text-center text-sm text-slate-400 mt-2">
+        <a href="/forgot-password" className="text-indigo-400 hover:text-indigo-300 hover:underline transition-colors">
           ¿Olvidaste tu contraseña?
         </a>
       </p>
