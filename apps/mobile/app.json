@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Deluxnet",
+    "slug": "deluxnet",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "deluxnet",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563eb"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-sqlite"
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:3001/api/v1"
+    }
+  }
+}

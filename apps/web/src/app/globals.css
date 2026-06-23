@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: 37 99 235; /* blue-600 */
+}
+
+.text-primary { color: rgb(var(--color-primary)); }
+.bg-primary { background-color: rgb(var(--color-primary)); }
+.border-primary { border-color: rgb(var(--color-primary)); }
+.ring-primary { --tw-ring-color: rgb(var(--color-primary) / 0.2); }
+.focus\:ring-primary:focus { --tw-ring-color: rgb(var(--color-primary) / 0.2); }
