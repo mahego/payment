@@ -5,9 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function ToastContainer() {
   const toasts = useToastStore((s) => s.toasts);
+  console.log('[ToastContainer] rendering with toasts:', toasts);
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={styles.container} pointerEvents="box-none" nativeID="dx-toast-container">
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} />
       ))}
@@ -81,6 +82,7 @@ function ToastItem({ toast }: { toast: ToastMessage }) {
 
   return (
     <Animated.View
+      nativeID="dx-toast-item"
       style={[
         styles.toast,
         {

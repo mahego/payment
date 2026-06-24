@@ -29,10 +29,13 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '@prisma/client';
 
 const REFRESH_COOKIE = 'deluxnet_refresh';
+const isProd = process.env.NODE_ENV === 'production';
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: isProd,
+  // 'none' allows cross-origin cookies (required when API and Web are on different subdomains)
+  // 'none' requires secure:true — safe because we only use it in production (HTTPS)
+  sameSite: (isProd ? 'none' : 'strict') as 'none' | 'strict',
   path: '/api/v1/auth/refresh',
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7d
 };

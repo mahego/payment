@@ -19,8 +19,19 @@ export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
   show: (message, type = 'info', duration = 3500) => {
     const id = Math.random().toString(36).substring(2, 9);
+    
+    // Ensure message is always a string
+    let formattedMessage = '';
+    if (Array.isArray(message)) {
+      formattedMessage = message.join('. ');
+    } else if (typeof message === 'object' && message !== null) {
+      formattedMessage = (message as any).message ?? JSON.stringify(message);
+    } else {
+      formattedMessage = String(message);
+    }
+
     set((state) => ({
-      toasts: [...state.toasts, { id, message, type, duration }],
+      toasts: [...state.toasts, { id, message: formattedMessage, type, duration }],
     }));
     setTimeout(() => {
       set((state) => ({

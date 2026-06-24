@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Server,
+  FlaskConical,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuthStore, hasMinRole, type Role } from '@/store/auth.store';
@@ -29,6 +30,7 @@ const NAV: Array<{ label: string; href: string; minRole: Role; icon: LucideIcon 
   { label: 'Reportes', href: '/reports', minRole: 'SUPERVISOR', icon: BarChart3 },
   { label: 'MikroTik', href: '/settings/mikrotik', minRole: 'ADMIN', icon: Server },
   { label: 'Configuración', href: '/settings/security', minRole: 'ADMIN', icon: Settings },
+  { label: 'Playground', href: '/playground', minRole: 'VIEWER', icon: FlaskConical },
 ];
 
 const roleLabel: Record<Role, string> = {

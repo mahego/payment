@@ -202,13 +202,41 @@ export default function RouteScreen() {
 
       {/* Customer list with debt */}
       {customers.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🎉</Text>
-          <Text style={styles.emptyTitle}>Sin adeudos pendientes</Text>
-          <Text style={styles.emptySubtitle}>
-            Todos los clientes están al corriente
-          </Text>
-        </View>
+        lastSync === null ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>📥</Text>
+            <Text style={styles.emptyTitle}>Ruta no descargada</Text>
+            <Text style={styles.emptySubtitle}>
+              Sincroniza para descargar la lista de clientes asignados a tu ruta.
+            </Text>
+            <TouchableOpacity
+              style={styles.syncButtonDashboard}
+              onPress={async () => {
+                setRefreshing(true);
+                toast.info('Sincronizando clientes...');
+                try {
+                  await syncCustomersFromServer();
+                  await loadData();
+                  toast.success('Ruta descargada con éxito');
+                } catch {
+                  toast.error('Error al sincronizar ruta');
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+            >
+              <Text style={styles.syncButtonTextDashboard}>Descargar ruta ahora</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>🎉</Text>
+            <Text style={styles.emptyTitle}>Sin adeudos pendientes</Text>
+            <Text style={styles.emptySubtitle}>
+              Todos los clientes están al corriente
+            </Text>
+          </View>
+        )
       ) : (
         <FlatList
           data={customers}
@@ -426,5 +454,17 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 12,
     paddingVertical: 16,
+  },
+  syncButtonDashboard: {
+    marginTop: 20,
+    backgroundColor: '#6366f1',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  syncButtonTextDashboard: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

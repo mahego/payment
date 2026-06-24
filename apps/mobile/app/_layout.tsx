@@ -7,7 +7,16 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 60_000 } },
 });
 
+import { useEffect } from 'react';
+import { useAuthStore } from '../src/store/auth.store';
+
 export default function RootLayout() {
+  const initialize = useAuthStore((state) => state.initialize);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
   return (
     <QueryClientProvider client={queryClient}>
       {Platform.OS === 'web' && (

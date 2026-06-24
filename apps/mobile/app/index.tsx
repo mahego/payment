@@ -5,11 +5,7 @@ import { useAuthStore } from '../src/store/auth.store';
 
 export default function IndexScreen() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, initialize } = useAuthStore();
-
-  useEffect(() => {
-    initialize();
-  }, [initialize]);
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
     if (!isLoading) {
