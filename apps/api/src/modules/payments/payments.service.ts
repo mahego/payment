@@ -4,12 +4,14 @@ import { PaymentMethod, Prisma } from '@prisma/client';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { MikrotikService } from '../mikrotik/mikrotik.service';
+import { NetworkActionsService } from '../network-actions/network-actions.service';
 
 @Injectable()
 export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mikrotikService: MikrotikService,
+    private readonly networkActionsService: NetworkActionsService,
   ) {}
 
   async findAll(filters?: { customerId?: string; query?: string; method?: PaymentMethod }) {
@@ -192,8 +194,20 @@ export class PaymentsService {
 
     // Reactivate client if their balance is now 0 or negative
     if (result.newBalance <= 0 && (result.oldStatus === 'SUSPENDIDO' || result.oldStatus === 'MOROSO')) {
-      this.mikrotikService.reactivateCustomer(dto.customerId).catch((err) => {
-        console.error(`Auto-reactivation failed for customer ${dto.customerId}:`, err);
+      this.prisma.customer.findUnique({
+        where: { id: dto.customerId },
+      }).then((updatedCust) => {
+        if (updatedCust && updatedCust.mikrotikProfileId) {
+          this.networkActionsService.queueAction(
+            'REACTIVATE_CUSTOMER',
+            updatedCust.mikrotikProfileId,
+            updatedCust.id,
+          ).catch((err) => {
+            console.error(`Auto-reactivation queue failed for customer ${dto.customerId}:`, err);
+          });
+        }
+      }).catch((err) => {
+        console.error(`Auto-reactivation search failed for customer ${dto.customerId}:`, err);
       });
     }
 

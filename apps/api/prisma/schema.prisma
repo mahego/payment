@@ -180,6 +180,50 @@ enum MikrotikSuspensionType {
   ADDRESS_LIST
 }
 
+enum NetworkConnectionType {
+  VPN
+  PUBLIC_IP
+  LAN
+  MANUAL
+}
+
+enum NetworkRouterStatus {
+  PENDING
+  ONLINE
+  OFFLINE
+  ERROR
+  DISABLED
+}
+
+enum NetworkServiceMode {
+  PPPOE
+  SIMPLE_QUEUE
+  HOTSPOT
+  ADDRESS_LIST
+}
+
+enum NetworkActionType {
+  TEST_CONNECTION
+  SUSPEND_CUSTOMER
+  REACTIVATE_CUSTOMER
+  DISABLE_PPPOE
+  ENABLE_PPPOE
+  DISABLE_QUEUE
+  ENABLE_QUEUE
+  DISABLE_HOTSPOT
+  ENABLE_HOTSPOT
+  ADD_ADDRESS_LIST
+  REMOVE_ADDRESS_LIST
+}
+
+enum NetworkActionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  RETRYING
+}
+
 model Customer {
   id               String          @id @default(cuid())
   firstName        String
@@ -200,8 +244,18 @@ model Customer {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
+  serviceMode           NetworkServiceMode  @default(PPPOE)
+  simpleQueueName       String?
+  hotspotUsername       String?
+  macAddress            String?
+  suspensionAddressList String?             @default("suspended")
+  isNetworkSuspended    Boolean             @default(false)
+  lastSuspendedAt       DateTime?
+  lastReactivatedAt     DateTime?
+
   mikrotikProfile  MikrotikProfile? @relation(fields: [mikrotikProfileId], references: [id], onDelete: SetNull)
   payments         Payment[]
+  networkActions   NetworkAction[]
 }
 
 // ─── Payments (stub – to be expanded) ─────────────
@@ -266,8 +320,16 @@ model MikrotikProfile {
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 
+  zoneName              String?
+  description           String?
+  connectionType        NetworkConnectionType   @default(VPN)
+  status                NetworkRouterStatus     @default(PENDING)
+  lastSeenAt            DateTime?
+  lastConnectionTestAt  DateTime?
+
   commandLogs     MikrotikCommandLog[]
   customers       Customer[]
+  networkActions  NetworkAction[]
 }
 
 model MikrotikCommandLog {
@@ -286,4 +348,25 @@ model MikrotikCommandLog {
 
   @@index([command, status])
   @@index([createdAt])
+}
+
+model NetworkAction {
+  id              String              @id @default(cuid())
+  profileId       String
+  customerId      String?
+  actionType      NetworkActionType
+  status          NetworkActionStatus @default(PENDING)
+  payload         Json?
+  errorMessage    String?
+  attempts        Int                 @default(0)
+  executedAt      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  profile         MikrotikProfile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  customer        Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([profileId, status])
+  @@index([customerId])
 }

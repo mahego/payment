@@ -15,6 +15,7 @@ class WebSQLiteMock {
         address_line: 'Calle Falsa 123',
         status: 'ACTIVO',
         current_balance: 1500.00,
+        is_network_suspended: 0,
         synced_at: Date.now(),
       },
       {
@@ -26,6 +27,7 @@ class WebSQLiteMock {
         address_line: 'Av. Siempre Viva 742',
         status: 'MOROSO',
         current_balance: 450.00,
+        is_network_suspended: 0,
         synced_at: Date.now(),
       },
       {
@@ -37,6 +39,7 @@ class WebSQLiteMock {
         address_line: 'Paseo de la Reforma 45',
         status: 'SUSPENDIDO',
         current_balance: 0.00,
+        is_network_suspended: 1,
         synced_at: Date.now(),
       }
     ],
@@ -89,7 +92,7 @@ class WebSQLiteMock {
     }
 
     if (sql.includes('INSERT OR REPLACE INTO customers')) {
-      const [id, firstName, lastName, phone, email, addressLine, status, currentBalance, syncedAt] = params;
+      const [id, firstName, lastName, phone, email, addressLine, status, currentBalance, isNetworkSuspended, syncedAt] = params;
       const index = this.memoryStore.customers.findIndex(c => c.id === id);
       const row = {
         id,
@@ -100,6 +103,7 @@ class WebSQLiteMock {
         address_line: addressLine ?? null,
         status,
         current_balance: currentBalance,
+        is_network_suspended: isNetworkSuspended,
         synced_at: syncedAt
       };
       if (index >= 0) {
@@ -204,6 +208,7 @@ async function runMigrations(db: SQLite.SQLiteDatabase) {
       address_line     TEXT,
       status           TEXT NOT NULL DEFAULT 'ACTIVO',
       current_balance  REAL NOT NULL DEFAULT 0,
+      is_network_suspended INTEGER NOT NULL DEFAULT 0,
       synced_at        INTEGER NOT NULL
     );
 
@@ -230,4 +235,10 @@ async function runMigrations(db: SQLite.SQLiteDatabase) {
       last_sync INTEGER
     );
   `);
+
+  try {
+    await db.execAsync('ALTER TABLE customers ADD COLUMN is_network_suspended INTEGER NOT NULL DEFAULT 0;');
+  } catch (e) {
+    // Ignore error if column already exists
+  }
 }

@@ -13,9 +13,9 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
-  Wifi,
-  Users,
-  ShieldAlert,
+  Play,
+  Activity,
+  Globe,
 } from 'lucide-react';
 
 interface MikrotikProfile {
@@ -28,6 +28,12 @@ interface MikrotikProfile {
   pppoeService: string | null;
   addressListName: string | null;
   active: boolean;
+  zoneName: string | null;
+  description: string | null;
+  connectionType: 'VPN' | 'PUBLIC_IP' | 'LAN' | 'MANUAL';
+  status: 'PENDING' | 'ONLINE' | 'OFFLINE' | 'ERROR' | 'DISABLED';
+  lastSeenAt: string | null;
+  lastConnectionTestAt: string | null;
 }
 
 export default function MikrotikSettingsPage() {
@@ -36,10 +42,11 @@ export default function MikrotikSettingsPage() {
   const [showForm, setShowForm] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [testingId, setTestingId] = useState<string | null>(null);
 
   const { data: profiles, isLoading } = useQuery<MikrotikProfile[]>({
     queryKey: ['mikrotik-profiles'],
-    queryFn: () => api.get('/mikrotik/profiles').then((r) => r.data),
+    queryFn: () => api.get('/mikrotik-profiles').then((r) => r.data),
   });
 
   const { register, handleSubmit, reset, setValue } = useForm();
@@ -47,9 +54,9 @@ export default function MikrotikSettingsPage() {
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (editingProfile) {
-        return api.patch(`/mikrotik/profiles/${editingProfile.id}`, data);
+        return api.patch(`/mikrotik-profiles/${editingProfile.id}`, data);
       }
-      return api.post('/mikrotik/profiles', data);
+      return api.post('/mikrotik-profiles', data);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['mikrotik-profiles'] });
@@ -68,11 +75,27 @@ export default function MikrotikSettingsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/mikrotik/profiles/${id}`),
+    mutationFn: (id: string) => api.delete(`/mikrotik-profiles/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['mikrotik-profiles'] });
       setSuccessMsg('Perfil eliminado con éxito.');
       setTimeout(() => setSuccessMsg(''), 4000);
+    },
+  });
+
+  const testMutation = useMutation({
+    mutationFn: (id: string) => api.post(`/mikrotik-profiles/${id}/test-connection`),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ['mikrotik-profiles'] });
+      setSuccessMsg(`Conexión exitosa con el router. Identidad: ${res.data?.identity || 'Desconocida'}`);
+      setTimeout(() => setSuccessMsg(''), 4000);
+    },
+    onError: (err: any) => {
+      setErrorMsg(err.response?.data?.message ?? 'No se pudo establecer conexión con el router.');
+      setTimeout(() => setErrorMsg(''), 5000);
+    },
+    onSettled: () => {
+      setTestingId(null);
     },
   });
 
@@ -93,6 +116,9 @@ export default function MikrotikSettingsPage() {
     setValue('pppoeService', profile.pppoeService ?? '');
     setValue('addressListName', profile.addressListName ?? 'suspended');
     setValue('active', profile.active);
+    setValue('zoneName', profile.zoneName ?? '');
+    setValue('description', profile.description ?? '');
+    setValue('connectionType', profile.connectionType);
     setShowForm(true);
   };
 
@@ -100,6 +126,11 @@ export default function MikrotikSettingsPage() {
     if (confirm('¿Estás seguro de que deseas eliminar este perfil? Se perderá la configuración de corte para los clientes asociados.')) {
       deleteMutation.mutate(id);
     }
+  };
+
+  const handleTest = (id: string) => {
+    setTestingId(id);
+    testMutation.mutate(id);
   };
 
   const onSubmit = (data: any) => {
@@ -111,13 +142,41 @@ export default function MikrotikSettingsPage() {
     saveMutation.mutate(data);
   };
 
+  const getStatusBadge = (status: MikrotikProfile['status']) => {
+    const styles = {
+      ONLINE: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+      OFFLINE: 'bg-rose-50 text-rose-700 border-rose-100',
+      ERROR: 'bg-amber-50 text-amber-700 border-amber-100',
+      PENDING: 'bg-blue-50 text-blue-700 border-blue-100',
+      DISABLED: 'bg-slate-100 text-slate-600 border-slate-200',
+    };
+    const labels = {
+      ONLINE: 'Online',
+      OFFLINE: 'Offline',
+      ERROR: 'Error',
+      PENDING: 'Pendiente',
+      DISABLED: 'Desactivado',
+    };
+    return (
+      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${styles[status]}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${
+          status === 'ONLINE' ? 'bg-emerald-500' :
+          status === 'OFFLINE' ? 'bg-rose-500' :
+          status === 'ERROR' ? 'bg-amber-500' :
+          status === 'PENDING' ? 'bg-blue-500' : 'bg-slate-400'
+        }`} />
+        {labels[status]}
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-8 max-w-5xl">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Integración con MikroTik</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Configura las conexiones a tus routers RouterOS para automatizar cortes y reactivaciones de clientes.
+            Configura y prueba las conexiones a tus routers RouterOS para automatizar cortes y reactivaciones de clientes.
           </p>
         </div>
 
@@ -190,6 +249,28 @@ export default function MikrotikSettingsPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Zona Asignada</label>
+                <input
+                  type="text"
+                  placeholder="ej. Zona Norte"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white/90 focus:outline-none"
+                  {...register('zoneName')}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Descripción</label>
+                <input
+                  type="text"
+                  placeholder="Router principal para clientes del sector poniente"
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white/90 focus:outline-none"
+                  {...register('description')}
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Usuario RouterOS</label>
@@ -216,6 +297,19 @@ export default function MikrotikSettingsPage() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipo de Conexión</label>
+                <select
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white/90 focus:outline-none"
+                  {...register('connectionType')}
+                >
+                  <option value="VPN">Túnel VPN (Seguro)</option>
+                  <option value="PUBLIC_IP">IP Pública Directa</option>
+                  <option value="LAN">Red Local LAN</option>
+                  <option value="MANUAL">Manual / Sin conexión directa</option>
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Método de Corte</label>
                 <select
                   className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white/90 focus:outline-none"
@@ -225,16 +319,6 @@ export default function MikrotikSettingsPage() {
                   <option value="QUEUE">Simple Queues (Velocidad mínima)</option>
                   <option value="ADDRESS_LIST">Address List (Redirección Firewall)</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Servicio PPPoE (Opcional)</label>
-                <input
-                  type="text"
-                  placeholder="ej. pppoe-out1"
-                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:bg-white/90 focus:outline-none"
-                  {...register('pppoeService')}
-                />
               </div>
 
               <div>
@@ -299,9 +383,9 @@ export default function MikrotikSettingsPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-50/50">
-                  <th className="px-6 py-3">Nombre</th>
-                  <th className="px-6 py-3">Host / API Port</th>
-                  <th className="px-6 py-3">Usuario</th>
+                  <th className="px-6 py-3">Nombre / Zona</th>
+                  <th className="px-6 py-3">Host / Puerto</th>
+                  <th className="px-6 py-3">Conexión</th>
                   <th className="px-6 py-3">Método Corte</th>
                   <th className="px-6 py-3">Estado</th>
                   <th className="px-6 py-3 text-right">Acciones</th>
@@ -310,12 +394,21 @@ export default function MikrotikSettingsPage() {
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {profiles.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50/30">
-                    <td className="px-6 py-4 font-semibold text-slate-900 flex items-center gap-2">
-                      <Server className="h-4 w-4 text-indigo-500" />
-                      {p.name}
+                    <td className="px-6 py-4">
+                      <div className="font-semibold text-slate-900 flex items-center gap-2">
+                        <Server className="h-4 w-4 text-indigo-500" />
+                        {p.name}
+                      </div>
+                      {p.zoneName && (
+                        <div className="text-xs text-slate-400 pl-6">{p.zoneName}</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 font-mono text-xs">{p.host}:{p.port}</td>
-                    <td className="px-6 py-4">{p.username}</td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                        {p.connectionType}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex rounded-lg px-2 py-0.5 text-xs font-medium ${
                         p.suspensionType === 'PPPOE' ? 'bg-blue-50 text-blue-700' :
@@ -326,14 +419,26 @@ export default function MikrotikSettingsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-                        p.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${p.active ? 'bg-emerald-500' : 'bg-slate-400'}`} />
-                        {p.active ? 'Activo' : 'Desactivado'}
-                      </span>
+                      {getStatusBadge(p.status)}
+                      {p.lastConnectionTestAt && (
+                        <div className="text-[10px] text-slate-400 mt-1">
+                          Test: {new Date(p.lastConnectionTestAt).toLocaleTimeString('es-MX')}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
+                      <button
+                        onClick={() => handleTest(p.id)}
+                        disabled={testingId === p.id}
+                        title="Probar conexión"
+                        className="rounded-lg p-1.5 text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition disabled:opacity-50"
+                      >
+                        {testingId === p.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </button>
                       <button
                         onClick={() => handleEdit(p)}
                         className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition"

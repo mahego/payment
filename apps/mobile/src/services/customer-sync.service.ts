@@ -10,6 +10,7 @@ export interface LocalCustomer {
   address_line: string | null;
   status: string;
   current_balance: number;
+  is_network_suspended: number;
   synced_at: number;
 }
 
@@ -22,6 +23,7 @@ interface ApiCustomer {
   addressLine?: string;
   status: string;
   currentBalance: number;
+  isNetworkSuspended?: boolean;
 }
 
 /**
@@ -40,8 +42,8 @@ export async function syncCustomersFromServer(): Promise<{
   for (const c of customers) {
     await db.runAsync(
       `INSERT OR REPLACE INTO customers
-        (id, first_name, last_name, phone, email, address_line, status, current_balance, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, first_name, last_name, phone, email, address_line, status, current_balance, is_network_suspended, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       c.id,
       c.firstName,
       c.lastName,
@@ -50,6 +52,7 @@ export async function syncCustomersFromServer(): Promise<{
       c.addressLine ?? null,
       c.status,
       c.currentBalance,
+      c.isNetworkSuspended ? 1 : 0,
       now,
     );
   }

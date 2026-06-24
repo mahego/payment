@@ -2,6 +2,7 @@ import { Injectable, OnApplicationBootstrap, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MikrotikService } from './mikrotik.service';
 import { CustomerStatus } from '@prisma/client';
+import { NetworkActionsService } from '../network-actions/network-actions.service';
 
 @Injectable()
 export class CutoffCronService implements OnApplicationBootstrap {
@@ -11,6 +12,7 @@ export class CutoffCronService implements OnApplicationBootstrap {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mikrotikService: MikrotikService,
+    private readonly networkActionsService: NetworkActionsService,
   ) {}
 
   onApplicationBootstrap() {
@@ -54,12 +56,24 @@ export class CutoffCronService implements OnApplicationBootstrap {
 
     let successCount = 0;
     for (const customer of customersToSuspend) {
-      this.logger.log(`Suspending customer ${customer.firstName} ${customer.lastName} due to unpaid balance ($${customer.currentBalance})...`);
-      const ok = await this.mikrotikService.suspendCustomer(customer.id);
-      if (ok) successCount++;
+      if (!customer.mikrotikProfileId) {
+        this.logger.warn(`Skip suspend: Customer ${customer.id} has no assigned MikroTik profile.`);
+        continue;
+      }
+      this.logger.log(`Queueing suspension for customer ${customer.firstName} ${customer.lastName} due to unpaid balance ($${customer.currentBalance})...`);
+      try {
+        await this.networkActionsService.queueAction(
+          'SUSPEND_CUSTOMER',
+          customer.mikrotikProfileId,
+          customer.id,
+        );
+        successCount++;
+      } catch (queueErr: any) {
+        this.logger.error(`Failed to queue suspension for customer ${customer.id}: ${queueErr.message}`);
+      }
     }
 
-    this.logger.log(`Suspension run finished: ${successCount}/${customersToSuspend.length} suspended successfully.`);
+    this.logger.log(`Suspension run finished: ${successCount}/${customersToSuspend.length} queued successfully.`);
     return {
       processed: customersToSuspend.length,
       suspended: successCount,

@@ -8,8 +8,9 @@ import {
   Max,
   IsDateString,
   IsNumber,
+  IsBoolean,
 } from 'class-validator';
-import { CustomerStatus } from '@prisma/client';
+import { CustomerStatus, NetworkServiceMode } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCustomerDto {
@@ -55,6 +56,16 @@ export class CreateCustomerDto {
   @IsString()
   pppoeUsername?: string;
 
+  @ApiPropertyOptional({ example: 'pppoe_password' })
+  @IsOptional()
+  @IsString()
+  pppoePassword?: string;
+
+  @ApiPropertyOptional({ example: '192.168.10.50' })
+  @IsOptional()
+  @IsString()
+  ipAddress?: string;
+
   @ApiPropertyOptional({ example: 150.0 })
   @IsOptional()
   @IsNumber()
@@ -69,4 +80,39 @@ export class CreateCustomerDto {
   @Min(1)
   @Max(28)
   billingCutoffDay: number;
+
+  @ApiPropertyOptional({ example: 'mikrotik-profile-id-123' })
+  @IsOptional()
+  @IsString()
+  mikrotikProfileId?: string;
+
+  @ApiPropertyOptional({ enum: NetworkServiceMode, default: NetworkServiceMode.PPPOE })
+  @IsOptional()
+  @IsEnum(NetworkServiceMode)
+  serviceMode?: NetworkServiceMode;
+
+  @ApiPropertyOptional({ example: 'queue_juan' })
+  @IsOptional()
+  @IsString()
+  simpleQueueName?: string;
+
+  @ApiPropertyOptional({ example: 'juan_hotspot' })
+  @IsOptional()
+  @IsString()
+  hotspotUsername?: string;
+
+  @ApiPropertyOptional({ example: '00:11:22:33:44:55' })
+  @IsOptional()
+  @IsString()
+  macAddress?: string;
+
+  @ApiPropertyOptional({ example: 'suspended' })
+  @IsOptional()
+  @IsString()
+  suspensionAddressList?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  isNetworkSuspended?: boolean;
 }

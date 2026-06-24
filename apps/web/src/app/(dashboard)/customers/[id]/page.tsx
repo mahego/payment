@@ -20,6 +20,9 @@ import {
   Wifi,
   FileSpreadsheet,
   ShieldAlert,
+  Activity,
+  RotateCw,
+  Settings,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -50,6 +53,14 @@ interface CustomerDetail {
   billingCutoffDay: number;
   createdAt: string;
   payments: Payment[];
+  serviceMode: 'PPPOE' | 'SIMPLE_QUEUE' | 'HOTSPOT' | 'ADDRESS_LIST';
+  simpleQueueName: string | null;
+  hotspotUsername: string | null;
+  macAddress: string | null;
+  suspensionAddressList: string | null;
+  isNetworkSuspended: boolean;
+  lastSuspendedAt: string | null;
+  lastReactivatedAt: string | null;
   mikrotikProfile?: {
     id: string;
     name: string;
@@ -66,25 +77,40 @@ export default function CustomerDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [acting, setActing] = useState<'suspend' | 'reactivate' | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const handleAction = async (action: 'suspend' | 'reactivate') => {
     setActing(action);
     setActionMsg(null);
     try {
-      await api.post(`/mikrotik/customers/${id}/${action}`);
+      await api.post(`/customers/${id}/${action}`);
       setActionMsg(
         action === 'suspend'
-          ? 'Servicio suspendido exitosamente en el router.'
-          : 'Servicio reactivado exitosamente en el router.'
+          ? 'Acción de corte de servicio encolada en el servidor.'
+          : 'Acción de reactivación de servicio encolada en el servidor.'
       );
       queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customer-actions', id] });
       setTimeout(() => setActionMsg(null), 5000);
     } catch (err: any) {
       setActionMsg(
-        err.response?.data?.message ?? 'Ocurrió un error al contactar al MikroTik.'
+        err.response?.data?.message ?? 'Ocurrió un error al intentar encolar la acción.'
       );
     } finally {
       setActing(null);
+    }
+  };
+
+  const handleRetryAction = async (actionId: string) => {
+    setRetryingId(actionId);
+    try {
+      await api.post(`/network-actions/${actionId}/retry`);
+      queryClient.invalidateQueries({ queryKey: ['customer', id] });
+      queryClient.invalidateQueries({ queryKey: ['customer-actions', id] });
+    } catch (err: any) {
+      alert(err.response?.data?.message ?? 'Error al reintentar la acción de red');
+    } finally {
+      setRetryingId(null);
     }
   };
 
@@ -94,6 +120,11 @@ export default function CustomerDetailPage() {
   const { data: customer, isLoading, error } = useQuery<CustomerDetail>({
     queryKey: ['customer', id],
     queryFn: () => api.get(`/customers/${id}`).then((r) => r.data),
+  });
+
+  const { data: networkActions, isLoading: actionsLoading } = useQuery<any[]>({
+    queryKey: ['customer-actions', id],
+    queryFn: () => api.get('/network-actions', { params: { customerId: id } }).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -178,6 +209,12 @@ export default function CustomerDetailPage() {
               {customer.firstName} {customer.lastName}
             </h1>
             {getStatusBadge(customer.status)}
+            {customer.isNetworkSuspended && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                <ShieldAlert className="h-3 w-3 text-rose-500" />
+                RED SUSPENDIDA
+              </span>
+            )}
           </div>
         </div>
 
@@ -204,6 +241,19 @@ export default function CustomerDetailPage() {
           )}
         </div>
       </div>
+
+      {customer.isNetworkSuspended && (
+        <div className="flex items-start gap-3 rounded-2xl border border-rose-100 bg-rose-50/80 p-4 text-rose-700 shadow-sm backdrop-blur-md">
+          <ShieldAlert className="h-5 w-5 text-rose-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-bold">Servicio de Internet Suspendido en el Router</h4>
+            <p className="text-xs text-rose-600/90 leading-normal mt-0.5">
+              Este cliente tiene el servicio suspendido en el MikroTik debido a adeudos o corte manual.
+              {customer.lastSuspendedAt && ` Fecha de corte: ${new Date(customer.lastSuspendedAt).toLocaleString('es-MX')}`}
+            </p>
+          </div>
+        </div>
+      )}
 
       {deleteError && (
         <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 text-sm text-rose-600">
@@ -401,6 +451,15 @@ export default function CustomerDetailPage() {
               <div className="text-center py-4 text-slate-400 text-xs">
                 <ShieldAlert className="h-6 w-6 mx-auto text-slate-300 mb-2" />
                 <p>Este cliente no tiene asignado un perfil de MikroTik Router.</p>
+                {canEdit && (
+                  <Link
+                    href={`/customers/${customer.id}/network`}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    Asignar Router
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -408,35 +467,116 @@ export default function CustomerDetailPage() {
                   <span className="font-semibold text-slate-400 uppercase tracking-wider">Router RouterOS</span>
                   <span className="font-bold text-slate-800">{customer.mikrotikProfile.name}</span>
                 </div>
+                
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-400 uppercase tracking-wider">Tipo de Corte</span>
-                  <span className="font-bold text-slate-800">{customer.mikrotikProfile.suspensionType}</span>
+                  <span className="font-semibold text-slate-400 uppercase tracking-wider">Modo de Servicio</span>
+                  <span className="inline-flex rounded-lg bg-indigo-50 px-2 py-0.5 font-bold text-indigo-700">
+                    {customer.serviceMode}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-400 uppercase tracking-wider">Estado de Red</span>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 font-bold ${
+                    customer.isNetworkSuspended 
+                      ? 'bg-rose-50 text-rose-700 border-rose-100' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                  }`}>
+                    {customer.isNetworkSuspended ? 'SUSPENDIDO' : 'ACTIVO / ONLINE'}
+                  </span>
+                </div>
+
+                {/* Service Mode Details */}
+                <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 text-xs space-y-2">
+                  <p className="font-semibold text-slate-500 uppercase tracking-wider text-[10px]">Configuración de Red</p>
+                  
+                  {customer.serviceMode === 'PPPOE' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Usuario PPPoE:</span>
+                        <span className="font-mono font-semibold text-slate-800">{customer.pppoeUsername || '—'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Contraseña:</span>
+                        <span className="font-mono text-slate-800">{customer.pppoePassword || '—'}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {customer.serviceMode === 'SIMPLE_QUEUE' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Nombre de Cola:</span>
+                        <span className="font-semibold text-slate-800">{customer.simpleQueueName || '—'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">IP de Queue:</span>
+                        <span className="font-mono text-slate-800">{customer.ipAddress || '—'}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {customer.serviceMode === 'HOTSPOT' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Usuario Hotspot:</span>
+                        <span className="font-semibold text-slate-800">{customer.hotspotUsername || '—'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">MAC Address:</span>
+                        <span className="font-mono text-slate-800">{customer.macAddress || '—'}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {customer.serviceMode === 'ADDRESS_LIST' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">IP de Cliente:</span>
+                        <span className="font-mono text-slate-800">{customer.ipAddress || '—'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Lista Suspensión:</span>
+                        <span className="font-semibold text-slate-800">{customer.suspensionAddressList || 'suspended'}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {canEdit && (
-                  <div className="pt-3 border-t border-slate-100 flex gap-2">
-                    <button
-                      onClick={() => handleAction('suspend')}
-                      disabled={!!acting}
-                      className="flex-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 active:scale-95 transition disabled:opacity-50"
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
+                    <Link
+                      href={`/customers/${customer.id}/network`}
+                      className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition active:scale-95 shadow-sm"
                     >
-                      {acting === 'suspend' ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto text-rose-700" />
-                      ) : (
-                        'Cortar Internet'
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleAction('reactivate')}
-                      disabled={!!acting}
-                      className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 active:scale-95 transition disabled:opacity-50"
-                    >
-                      {acting === 'reactivate' ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto text-emerald-700" />
-                      ) : (
-                        'Reactivar'
-                      )}
-                    </button>
+                      <Settings className="h-3.5 w-3.5 text-slate-500" />
+                      Administrar Parámetros de Red
+                    </Link>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAction('suspend')}
+                        disabled={!!acting}
+                        className="flex-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 active:scale-95 transition disabled:opacity-50"
+                      >
+                        {acting === 'suspend' ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto text-rose-700" />
+                        ) : (
+                          'Cortar Internet'
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleAction('reactivate')}
+                        disabled={!!acting}
+                        className="flex-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 active:scale-95 transition disabled:opacity-50"
+                      >
+                        {acting === 'reactivate' ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin mx-auto text-emerald-700" />
+                        ) : (
+                          'Reactivar'
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -449,6 +589,91 @@ export default function CustomerDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Network Actions History Card */}
+      <div className="glass-card glass-shine bg-white/70 border-white/40 p-6 shadow-glass mt-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Activity className="h-5 w-5 text-indigo-500" />
+            <h3 className="text-lg font-bold text-slate-900">Bitácora de Acciones de Red</h3>
+          </div>
+          <span className="text-xs text-slate-400 uppercase font-semibold">Acciones recientes</span>
+        </div>
+
+        {actionsLoading ? (
+          <div className="flex items-center justify-center py-6 text-slate-400">
+            <Loader2 className="h-6 w-6 animate-spin text-indigo-500 mr-2" />
+            <span className="text-xs font-medium">Cargando bitácora de red...</span>
+          </div>
+        ) : !networkActions || networkActions.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 text-xs">
+            <p>No se registran acciones de red para este cliente.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-xs font-semibold uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                  <th className="px-4 py-2">Tipo de Acción</th>
+                  <th className="px-4 py-2">Router</th>
+                  <th className="px-4 py-2">Estado</th>
+                  <th className="px-4 py-2">Intentos</th>
+                  <th className="px-4 py-2">Fecha</th>
+                  <th className="px-4 py-2">Detalles / Error</th>
+                  <th className="px-4 py-2 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {networkActions.map((act) => {
+                  const getStatusStyle = (st: string) => {
+                    switch (st) {
+                      case 'SUCCESS': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+                      case 'FAILED': return 'bg-rose-50 text-rose-700 border-rose-100';
+                      case 'RUNNING': return 'bg-indigo-50 text-indigo-700 border-indigo-100 animate-pulse';
+                      case 'PENDING': return 'bg-amber-50 text-amber-700 border-amber-100';
+                      default: return 'bg-slate-50 text-slate-700 border-slate-100';
+                    }
+                  };
+                  return (
+                    <tr key={act.id} className="hover:bg-slate-50/30 text-xs">
+                      <td className="px-4 py-3 font-semibold text-slate-800">{act.actionType}</td>
+                      <td className="px-4 py-3 text-slate-600">{act.profile?.name || 'Router Desconocido'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 font-semibold text-[10px] ${getStatusStyle(act.status)}`}>
+                          {act.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 font-mono">{act.attempts}</td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {new Date(act.createdAt).toLocaleString('es-MX')}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 max-w-xs truncate" title={act.errorMessage || ''}>
+                        {act.errorMessage || <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {act.status === 'FAILED' && canEdit && (
+                          <button
+                            onClick={() => handleRetryAction(act.id)}
+                            disabled={retryingId === act.id}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 active:scale-95 transition disabled:opacity-50"
+                          >
+                            {retryingId === act.id ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                            ) : (
+                              <RotateCw className="h-3 w-3" />
+                            )}
+                            Reintentar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

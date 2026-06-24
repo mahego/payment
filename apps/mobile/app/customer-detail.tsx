@@ -106,6 +106,16 @@ export default function CustomerDetailScreen() {
           <Text style={styles.backButtonText}>← Clientes</Text>
         </TouchableOpacity>
 
+        {/* Network Suspended Alert Banner */}
+        {customer.is_network_suspended === 1 && (
+          <View className="glass-panel" style={styles.suspendedBanner}>
+            <Text style={styles.suspendedBannerTitle}>⚠️ SERVICIO DE RED SUSPENDIDO</Text>
+            <Text style={styles.suspendedBannerText}>
+              Este cliente tiene el servicio de internet cortado en el router por adeudos o suspensión manual.
+            </Text>
+          </View>
+        )}
+
         {/* Customer card */}
         <View className="glass-panel" style={styles.card}>
           <View style={styles.avatarLarge}>
@@ -312,4 +322,28 @@ const styles = StyleSheet.create({
   paymentDate: { fontSize: 11, color: '#64748b', marginTop: 2 },
   paymentAmount: { fontSize: 15, fontWeight: '800', color: '#34d399' },
   paymentMethod: { fontSize: 10, color: '#64748b', fontWeight: '600', marginTop: 2 },
+  suspendedBanner: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    marginBottom: 16,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
+  },
+  suspendedBannerTitle: {
+    fontWeight: '800',
+    fontSize: 14,
+    color: '#f87171',
+    marginBottom: 4,
+  },
+  suspendedBannerText: {
+    color: '#fca5a5',
+    fontSize: 12,
+    lineHeight: 16,
+  },
 });

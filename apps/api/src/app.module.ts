@@ -10,6 +10,7 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { MikrotikModule } from './modules/mikrotik/mikrotik.module';
+import { NetworkActionsModule } from './modules/network-actions/network-actions.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { ActiveUserGuard } from './common/guards/active-user.guard';
@@ -32,6 +33,7 @@ import { ActiveUserGuard } from './common/guards/active-user.guard';
     PaymentsModule,
     SyncModule,
     MikrotikModule,
+    NetworkActionsModule,
   ],
   providers: [
     // Rate-limit guard applied globally

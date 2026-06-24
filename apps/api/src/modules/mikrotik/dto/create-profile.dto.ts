@@ -8,7 +8,7 @@ import {
   Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { MikrotikSuspensionType } from '@prisma/client';
+import { MikrotikSuspensionType, NetworkConnectionType } from '@prisma/client';
 
 export class CreateMikrotikProfileDto {
   @ApiProperty()
@@ -53,4 +53,19 @@ export class CreateMikrotikProfileDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  zoneName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ enum: NetworkConnectionType })
+  @IsOptional()
+  @IsEnum(NetworkConnectionType)
+  connectionType?: NetworkConnectionType;
 }
