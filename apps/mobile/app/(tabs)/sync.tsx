@@ -4,9 +4,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   FlatList,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { syncOutboxEvents } from '../../src/services/sync.service';
@@ -19,6 +19,7 @@ import {
 } from '../../src/services/customer-sync.service';
 import { useAuthStore } from '../../src/store/auth.store';
 import { useNetworkStatus } from '../../src/services/network.service';
+import { toast } from '../../src/store/toast.store';
 
 function formatTimeAgo(date: Date | null): string {
   if (!date) return 'Nunca sincronizado';
@@ -63,15 +64,16 @@ export default function SyncScreen() {
 
   const handleSync = async () => {
     if (!isAuthenticated) {
-      Alert.alert('Sesión inválida', 'Debes iniciar sesión para sincronizar.');
+      toast.error('Debes iniciar sesión para sincronizar.');
       return;
     }
     if (!isConnected) {
-      Alert.alert('Sin conexión', 'Conéctate a internet para sincronizar.');
+      toast.warning('Conéctate a internet para sincronizar.');
       return;
     }
 
     setSyncing(true);
+    toast.info('Iniciando sincronización...');
     try {
       // Sync outbox offline payments first
       const outboxRes = await syncOutboxEvents();
@@ -81,20 +83,14 @@ export default function SyncScreen() {
       await loadData();
       
       if (outboxRes.failed > 0) {
-        Alert.alert(
-          'Sincronización parcial',
-          `Se enviaron ${outboxRes.synced} pagos, pero fallaron ${outboxRes.failed}.`
-        );
+        toast.error(`Sincronización parcial: ${outboxRes.synced} pagos enviados, ${outboxRes.failed} fallidos`);
       } else if (outboxRes.synced > 0) {
-        Alert.alert(
-          'Sincronización exitosa',
-          `Se sincronizaron correctamente ${outboxRes.synced} pagos.`
-        );
+        toast.success(`Sincronización exitosa: ${outboxRes.synced} cobros enviados`);
       } else {
-        Alert.alert('Sincronización', 'Datos de clientes actualizados correctamente.');
+        toast.success('Datos de clientes actualizados correctamente.');
       }
     } catch {
-      Alert.alert('Error', 'Ocurrió un error inesperado al sincronizar.');
+      toast.error('Error al sincronizar.');
     } finally {
       setSyncing(false);
     }
@@ -112,16 +108,16 @@ export default function SyncScreen() {
     }
 
     const statusColors: Record<string, { bg: string; color: string; label: string }> = {
-      pending: { bg: '#fef3c7', color: '#d97706', label: 'Pendiente' },
-      syncing: { bg: '#dbeafe', color: '#2563eb', label: 'Enviando' },
-      synced: { bg: '#d1fae5', color: '#059669', label: 'Sincronizado' },
-      failed: { bg: '#fee2e2', color: '#dc2626', label: 'Fallido' },
+      pending: { bg: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', label: 'Pendiente' },
+      syncing: { bg: 'rgba(96, 165, 250, 0.15)', color: '#60a5fa', label: 'Enviando' },
+      synced: { bg: 'rgba(52, 211, 153, 0.15)', color: '#34d399', label: 'Sincronizado' },
+      failed: { bg: 'rgba(248, 113, 113, 0.15)', color: '#f87171', label: 'Fallido' },
     };
 
-    const statusConfig = statusColors[item.status] ?? { bg: '#f3f4f6', color: '#6b7280', label: item.status };
+    const statusConfig = statusColors[item.status] ?? { bg: 'rgba(255,255,255,0.05)', color: '#94a3b8', label: item.status };
 
     return (
-      <View style={styles.eventCard}>
+      <View className="glass-panel" style={styles.eventCard}>
         <View style={styles.eventCardTop}>
           <View style={{ flex: 1, paddingRight: 8 }}>
             <Text style={styles.eventTitle}>{item.aggregate_type}</Text>
@@ -156,12 +152,16 @@ export default function SyncScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Prismatic Glowing Blobs */}
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#6366f1', top: '10%', left: '5%', width: 250, height: 250, borderRadius: 125 }]} />
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#06b6d4', bottom: '25%', right: '5%', width: 250, height: 250, borderRadius: 125 }]} />
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Sincronización</Text>
         <View style={styles.statusRow}>
           <View style={styles.networkIndicator}>
-            <View style={[styles.dot, { backgroundColor: isConnected ? '#059669' : '#dc2626' }]} />
+            <View style={[styles.dot, { backgroundColor: isConnected ? '#34d399' : '#f87171' }]} />
             <Text style={styles.statusLabel}>{isConnected ? 'Conectado (Online)' : 'Sin internet (Offline)'}</Text>
           </View>
           <Text style={styles.syncTime}>{formatTimeAgo(lastSync)}</Text>
@@ -169,19 +169,21 @@ export default function SyncScreen() {
       </View>
 
       {/* Sync Control Card */}
-      <View style={styles.controlCard}>
+      <View className="glass-panel" style={styles.controlCard}>
         <View style={styles.countContainer}>
           <Text style={styles.countValue}>{pendingCount}</Text>
           <Text style={styles.countLabel}>Operaciones pendientes</Text>
         </View>
 
         <TouchableOpacity
+          className="liquid-button"
           style={[
             styles.syncButton,
             (syncing || !isConnected || !isAuthenticated) && styles.syncButtonDisabled,
           ]}
           onPress={handleSync}
           disabled={syncing || !isConnected || !isAuthenticated}
+          activeOpacity={0.8}
         >
           {syncing ? (
             <ActivityIndicator color="#fff" />
@@ -210,8 +212,8 @@ export default function SyncScreen() {
           <RefreshControl
             refreshing={syncing}
             onRefresh={handleSync}
-            tintColor="#2563eb"
-            colors={['#2563eb']}
+            tintColor="#6366f1"
+            colors={['#6366f1']}
             enabled={isConnected && isAuthenticated}
           />
         }
@@ -228,72 +230,95 @@ export default function SyncScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+  container: { flex: 1, backgroundColor: '#090d16', overflow: 'hidden' },
+  blob: {
+    position: 'absolute',
+    opacity: 0.15,
+    ...Platform.select({
+      web: {
+        filter: 'blur(70px)',
+      },
+      default: {
+        shadowOpacity: 0.6,
+        shadowRadius: 80,
+        shadowOffset: { width: 0, height: 0 },
+      },
+    }),
   },
-  title: { fontSize: 22, fontWeight: '800', color: '#111827', marginBottom: 6 },
+  header: {
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
+  },
+  title: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 6 },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   networkIndicator: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  statusLabel: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  syncTime: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  statusLabel: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
+  syncTime: { fontSize: 11, color: '#64748b', fontWeight: '500' },
 
   controlCard: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     margin: 16,
     borderRadius: 14,
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   countContainer: { alignItems: 'center', marginBottom: 16 },
-  countValue: { fontSize: 36, fontWeight: '900', color: '#111827' },
-  countLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500', marginTop: 2 },
+  countValue: { fontSize: 36, fontWeight: '900', color: '#fff' },
+  countLabel: { fontSize: 13, color: '#94a3b8', fontWeight: '500', marginTop: 2 },
   syncButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#6366f1',
     width: '100%',
-    borderRadius: 10,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  syncButtonDisabled: { backgroundColor: '#9ca3af' },
+  syncButtonDisabled: { opacity: 0.5 },
   syncButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  warningText: { color: '#b45309', fontSize: 12, marginTop: 10, textAlign: 'center' },
+  warningText: { color: '#fbbf24', fontSize: 12, marginTop: 10, textAlign: 'center', fontWeight: '500' },
 
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#374151', paddingHorizontal: 20, marginTop: 8, marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#cbd5e1', paddingHorizontal: 20, marginTop: 8, marginBottom: 10 },
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   eventCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    borderRadius: 12,
     padding: 14,
     marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   eventCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  eventTitle: { fontSize: 12, fontWeight: '700', color: '#9ca3af' },
-  eventDetails: { fontSize: 14, fontWeight: '600', color: '#111827', marginTop: 2 },
+  eventTitle: { fontSize: 11, fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 },
+  eventDetails: { fontSize: 14, fontWeight: '600', color: '#fff', marginTop: 2 },
   statusBadge: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
   statusText: { fontSize: 10, fontWeight: '700' },
-  errorText: { color: '#dc2626', fontSize: 11, marginTop: 6, fontWeight: '500' },
-  eventCardBottom: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#f3f4f6' },
-  eventDate: { fontSize: 11, color: '#9ca3af' },
-  attemptsText: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  errorText: { color: '#f87171', fontSize: 11, marginTop: 6, fontWeight: '500' },
+  eventCardBottom: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.05)' },
+  eventDate: { fontSize: 11, color: '#64748b' },
+  attemptsText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
 
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40 },
   emptyIcon: { fontSize: 40, marginBottom: 8 },
-  emptyText: { color: '#9ca3af', fontSize: 13, textAlign: 'center' },
+  emptyText: { color: '#64748b', fontSize: 13, textAlign: 'center' },
 });

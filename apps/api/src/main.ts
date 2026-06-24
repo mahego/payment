@@ -34,7 +34,7 @@ async function bootstrap() {
     origin: isDev ? true : allowedOrigins,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'x-refresh-token'],
   });
 
   // ── Global validation pipe ───────────────────────

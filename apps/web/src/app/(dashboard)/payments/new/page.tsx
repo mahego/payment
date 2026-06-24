@@ -26,6 +26,8 @@ interface CustomerListItem {
   currentBalance: string | number;
 }
 
+import { toast } from '../../../../store/toast.store';
+
 function NewPaymentForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,11 +77,14 @@ function NewPaymentForm() {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
       queryClient.invalidateQueries({ queryKey: ['customer', selectedCustomerId] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast.success('Pago registrado correctamente');
       router.push('/payments');
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message ?? 'Ocurrió un error al registrar el pago';
-      setErrorMsg(Array.isArray(msg) ? msg.join(', ') : msg);
+      const parsedMsg = Array.isArray(msg) ? msg.join(', ') : msg;
+      setErrorMsg(parsedMsg);
+      toast.error(parsedMsg);
     },
   });
 

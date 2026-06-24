@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
@@ -17,12 +18,13 @@ import {
   LocalCustomer,
 } from '../../src/services/customer-sync.service';
 import { useNetworkStatus } from '../../src/services/network.service';
+import { toast } from '../../src/store/toast.store';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  ACTIVO:     { label: 'Activo',     color: '#059669', bg: '#d1fae5' },
-  SUSPENDIDO: { label: 'Suspendido', color: '#dc2626', bg: '#fee2e2' },
-  MOROSO:     { label: 'Moroso',     color: '#d97706', bg: '#fef3c7' },
-  CANCELADO:  { label: 'Cancelado',  color: '#6b7280', bg: '#f3f4f6' },
+  ACTIVO:     { label: 'Activo',     color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)' },
+  SUSPENDIDO: { label: 'Suspendido', color: '#f87171', bg: 'rgba(248, 113, 113, 0.15)' },
+  MOROSO:     { label: 'Moroso',     color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.15)' },
+  CANCELADO:  { label: 'Cancelado',  color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.15)' },
 };
 
 function formatTimeAgo(date: Date | null): string {
@@ -44,7 +46,6 @@ export default function CustomersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [syncMessage, setSyncMessage] = useState('');
 
   const loadLocal = useCallback(async (searchQuery?: string) => {
     try {
@@ -72,21 +73,19 @@ export default function CustomersScreen() {
 
   const handleRefresh = useCallback(async () => {
     if (!isConnected) {
-      setSyncMessage('Sin conexión a internet');
-      setTimeout(() => setSyncMessage(''), 3000);
+      toast.warning('Sin conexión a internet');
       return;
     }
     setRefreshing(true);
-    setSyncMessage('');
+    toast.info('Sincronizando clientes...');
     try {
       const result = await syncCustomersFromServer();
-      setSyncMessage(`${result.downloaded} clientes descargados`);
+      toast.success(`${result.downloaded} clientes actualizados`);
       await loadLocal(query);
     } catch {
-      setSyncMessage('Error al sincronizar');
+      toast.error('Error al sincronizar');
     } finally {
       setRefreshing(false);
-      setTimeout(() => setSyncMessage(''), 4000);
     }
   }, [isConnected, loadLocal, query]);
 
@@ -97,6 +96,7 @@ export default function CustomersScreen() {
 
       return (
         <TouchableOpacity
+          className="glass-panel"
           style={styles.card}
           activeOpacity={0.7}
           onPress={() =>
@@ -132,7 +132,7 @@ export default function CustomersScreen() {
             <Text
               style={[
                 styles.balanceValue,
-                { color: balance > 0 ? '#dc2626' : '#059669' },
+                { color: balance > 0 ? '#f87171' : '#34d399' },
               ]}
             >
               ${balance.toFixed(2)}
@@ -147,7 +147,7 @@ export default function CustomersScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color="#6366f1" />
         <Text style={styles.loadingText}>Cargando clientes...</Text>
       </View>
     );
@@ -155,6 +155,10 @@ export default function CustomersScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Prismatic Glowing Blobs */}
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#6366f1', top: '10%', left: '5%', width: 250, height: 250, borderRadius: 125 }]} />
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#06b6d4', bottom: '20%', right: '5%', width: 250, height: 250, borderRadius: 125 }]} />
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -163,7 +167,7 @@ export default function CustomersScreen() {
             <View
               style={[
                 styles.connectionDot,
-                { backgroundColor: isConnected ? '#059669' : '#dc2626' },
+                { backgroundColor: isConnected ? '#34d399' : '#f87171' },
               ]}
             />
             <Text style={styles.syncTime}>{formatTimeAgo(lastSync)}</Text>
@@ -172,17 +176,14 @@ export default function CustomersScreen() {
 
         {/* Search */}
         <TextInput
+          className="liquid-input"
           style={styles.searchInput}
           placeholder="Buscar por nombre o teléfono..."
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#64748b"
           value={query}
           onChangeText={setQuery}
           clearButtonMode="while-editing"
         />
-
-        {syncMessage ? (
-          <Text style={styles.syncMessage}>{syncMessage}</Text>
-        ) : null}
       </View>
 
       {/* List */}
@@ -211,8 +212,8 @@ export default function CustomersScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#2563eb"
-              colors={['#2563eb']}
+              tintColor="#6366f1"
+              colors={['#6366f1']}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -229,17 +230,37 @@ export default function CustomersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6' },
-  loadingText: { marginTop: 12, color: '#6b7280', fontSize: 14 },
+  container: { flex: 1, backgroundColor: '#090d16', overflow: 'hidden' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#090d16' },
+  loadingText: { marginTop: 12, color: '#94a3b8', fontSize: 14 },
+
+  blob: {
+    position: 'absolute',
+    opacity: 0.15,
+    ...Platform.select({
+      web: {
+        filter: 'blur(70px)',
+      },
+      default: {
+        shadowOpacity: 0.6,
+        shadowRadius: 80,
+        shadowOffset: { width: 0, height: 0 },
+      },
+    }),
+  },
 
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   headerTop: {
     flexDirection: 'row',
@@ -247,39 +268,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  title: { fontSize: 22, fontWeight: '800', color: '#111827' },
+  title: { fontSize: 22, fontWeight: '800', color: '#fff' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   connectionDot: { width: 8, height: 8, borderRadius: 4 },
-  syncTime: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  syncTime: { fontSize: 11, color: '#94a3b8', fontWeight: '500' },
 
   searchInput: {
-    backgroundColor: '#f9fafb',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#111827',
+    color: '#fff',
   },
   syncMessage: {
     marginTop: 8,
     fontSize: 12,
-    color: '#2563eb',
+    color: '#818cf8',
     fontWeight: '600',
     textAlign: 'center',
   },
 
   list: { padding: 16 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
     borderRadius: 14,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   cardTop: {
     flexDirection: 'row',
@@ -291,13 +314,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#dbeafe',
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: { fontSize: 14, fontWeight: '700', color: '#2563eb' },
-  cardName: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  cardPhone: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  avatarText: { fontSize: 14, fontWeight: '700', color: '#818cf8' },
+  cardName: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  cardPhone: { fontSize: 12, color: '#94a3b8', marginTop: 2 },
 
   statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
   statusText: { fontSize: 11, fontWeight: '700' },
@@ -309,9 +332,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
   },
-  balanceLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500' },
+  balanceLabel: { fontSize: 13, color: '#94a3b8', fontWeight: '500' },
   balanceValue: { fontSize: 16, fontWeight: '800' },
 
   empty: {
@@ -321,11 +344,11 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151', marginBottom: 6 },
-  emptySubtitle: { fontSize: 13, color: '#9ca3af', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#fff', marginBottom: 6 },
+  emptySubtitle: { fontSize: 13, color: '#94a3b8', textAlign: 'center' },
   syncButton: {
     marginTop: 20,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#6366f1',
     borderRadius: 10,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -334,7 +357,7 @@ const styles = StyleSheet.create({
 
   footerText: {
     textAlign: 'center',
-    color: '#9ca3af',
+    color: '#64748b',
     fontSize: 12,
     paddingVertical: 16,
   },

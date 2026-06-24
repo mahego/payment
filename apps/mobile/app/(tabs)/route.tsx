@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ import {
   LocalCustomer,
 } from '../../src/services/customer-sync.service';
 import { syncOutboxEvents } from '../../src/services/sync.service';
+import { toast } from '../../src/store/toast.store';
 
 export default function RouteScreen() {
   const router = useRouter();
@@ -89,13 +91,17 @@ export default function RouteScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color="#6366f1" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      {/* Prismatic Glowing Blobs */}
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#6366f1', top: '5%', left: '5%', width: 250, height: 250, borderRadius: 125 }]} />
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#f43f5e', bottom: '15%', right: '5%', width: 250, height: 250, borderRadius: 125 }]} />
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -114,19 +120,19 @@ export default function RouteScreen() {
           <View
             style={[
               styles.connectionBadge,
-              { backgroundColor: isConnected ? '#d1fae5' : '#fee2e2' },
+              { backgroundColor: isConnected ? 'rgba(52, 211, 153, 0.15)' : 'rgba(248, 113, 113, 0.15)' },
             ]}
           >
             <View
               style={[
                 styles.connectionDot,
-                { backgroundColor: isConnected ? '#059669' : '#dc2626' },
+                { backgroundColor: isConnected ? '#34d399' : '#f87171' },
               ]}
             />
             <Text
               style={[
                 styles.connectionText,
-                { color: isConnected ? '#059669' : '#dc2626' },
+                { color: isConnected ? '#34d399' : '#f87171' },
               ]}
             >
               {isConnected ? 'Online' : 'Offline'}
@@ -141,7 +147,7 @@ export default function RouteScreen() {
             <Text style={styles.statLabel}>Con adeudo</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={[styles.statValue, { color: '#dc2626' }]}>
+            <Text style={[styles.statValue, { color: '#f87171' }]}>
               ${totalDebt.toFixed(0)}
             </Text>
             <Text style={styles.statLabel}>Deuda total</Text>
@@ -150,7 +156,7 @@ export default function RouteScreen() {
             <Text
               style={[
                 styles.statValue,
-                { color: pendingCount > 0 ? '#d97706' : '#059669' },
+                { color: pendingCount > 0 ? '#fbbf24' : '#34d399' },
               ]}
             >
               {pendingCount}
@@ -165,8 +171,19 @@ export default function RouteScreen() {
         <TouchableOpacity
           style={styles.syncBanner}
           onPress={async () => {
-            await syncOutboxEvents();
-            await loadData();
+            toast.info('Sincronizando cobros pendientes...');
+            try {
+              const res = await syncOutboxEvents();
+              await loadData();
+              if (res.synced > 0) {
+                toast.success(`Sincronización exitosa: ${res.synced} pago(s) enviado(s)`);
+              }
+              if (res.failed > 0) {
+                toast.error(`Error en sincronización: ${res.failed} pago(s) falló`);
+              }
+            } catch {
+              toast.error('Ocurrió un error al sincronizar cobros');
+            }
           }}
         >
           <Text style={styles.syncBannerText}>
@@ -201,14 +218,15 @@ export default function RouteScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor="#2563eb"
-              colors={['#2563eb']}
+              tintColor="#6366f1"
+              colors={['#6366f1']}
             />
           }
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <TouchableOpacity
+              className="glass-panel"
               style={styles.customerCard}
               activeOpacity={0.7}
               onPress={() =>
@@ -242,7 +260,7 @@ export default function RouteScreen() {
                   style={styles.payQuickButton}
                   onPress={() =>
                     router.push({
-                      pathname: '/(tabs)/payments',
+                      pathname: '/payments',
                       params: {
                         customerId: item.id,
                         customerName: `${item.first_name} ${item.last_name}`,
@@ -267,21 +285,39 @@ export default function RouteScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: '#090d16', overflow: 'hidden' },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#090d16',
   },
-
+  blob: {
+    position: 'absolute',
+    opacity: 0.15,
+    ...Platform.select({
+      web: {
+        filter: 'blur(70px)',
+      },
+      default: {
+        shadowOpacity: 0.6,
+        shadowRadius: 80,
+        shadowOffset: { width: 0, height: 0 },
+      },
+    }),
+  },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   headerTop: {
     flexDirection: 'row',
@@ -289,8 +325,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 16,
   },
-  greeting: { fontSize: 20, fontWeight: '800', color: '#111827' },
-  dateText: { fontSize: 12, color: '#6b7280', marginTop: 2, textTransform: 'capitalize' },
+  greeting: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  dateText: { fontSize: 12, color: '#94a3b8', marginTop: 2, textTransform: 'capitalize' },
 
   connectionBadge: {
     flexDirection: 'row',
@@ -306,70 +342,72 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 8 },
   statCard: {
     flex: 1,
-    backgroundColor: '#f9fafb',
-    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 12,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
-  statValue: { fontSize: 18, fontWeight: '900', color: '#111827' },
-  statLabel: { fontSize: 10, color: '#6b7280', fontWeight: '600', marginTop: 2 },
+  statValue: { fontSize: 18, fontWeight: '900', color: '#fff' },
+  statLabel: { fontSize: 10, color: '#94a3b8', fontWeight: '600', marginTop: 2 },
 
   syncBanner: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fde68a',
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
-  syncBannerText: { fontSize: 12, color: '#92400e', fontWeight: '600', flex: 1 },
-  syncBannerAction: { fontSize: 12, color: '#d97706', fontWeight: '800' },
+  syncBannerText: { fontSize: 12, color: '#fbbf24', fontWeight: '600', flex: 1 },
+  syncBannerAction: { fontSize: 12, color: '#f59e0b', fontWeight: '800' },
 
   syncInfo: {
     paddingHorizontal: 20,
     paddingVertical: 8,
   },
-  syncInfoText: { fontSize: 11, color: '#9ca3af', fontWeight: '500' },
+  syncInfoText: { fontSize: 11, color: '#64748b', fontWeight: '500' },
 
   list: { padding: 16 },
   customerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderRadius: 14,
+    padding: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+      },
+    }),
   },
   customerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   avatar: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#fee2e2',
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: { fontSize: 13, fontWeight: '700', color: '#dc2626' },
-  customerName: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  customerPhone: { fontSize: 11, color: '#9ca3af', marginTop: 1 },
+  avatarText: { fontSize: 13, fontWeight: '700', color: '#f87171' },
+  customerName: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  customerPhone: { fontSize: 11, color: '#94a3b8', marginTop: 1 },
 
-  debtAmount: { fontSize: 16, fontWeight: '900', color: '#dc2626', marginBottom: 4 },
+  debtAmount: { fontSize: 16, fontWeight: '900', color: '#f87171', marginBottom: 4 },
   payQuickButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#6366f1',
     borderRadius: 6,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   payQuickText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 
@@ -380,12 +418,12 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#374151', marginBottom: 6 },
-  emptySubtitle: { fontSize: 13, color: '#9ca3af', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#fff', marginBottom: 6 },
+  emptySubtitle: { fontSize: 13, color: '#94a3b8', textAlign: 'center' },
 
   footerText: {
     textAlign: 'center',
-    color: '#9ca3af',
+    color: '#64748b',
     fontSize: 12,
     paddingVertical: 16,
   },

@@ -26,8 +26,8 @@ export default function TabsLayout() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#2563eb" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#090d16' }}>
+        <ActivityIndicator size="large" color="#6366f1" />
       </View>
     );
   }
@@ -39,12 +39,13 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#2563eb',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: '#6366f1',
+        tabBarInactiveTintColor: '#64748b',
         headerShown: false,
         tabBarStyle: {
+          backgroundColor: '#090d16',
           borderTopWidth: 1,
-          borderTopColor: '#e5e7eb',
+          borderTopColor: 'rgba(255, 255, 255, 0.05)',
           height: 60,
           paddingBottom: 8,
           paddingTop: 8,

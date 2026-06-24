@@ -7,6 +7,7 @@ import { loginSchema, type LoginInput } from '@/schemas/auth.schema';
 import { useAuthStore } from '@/store/auth.store';
 import { useState } from 'react';
 import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
+import { toast } from '../../store/toast.store';
 
 export function LoginForm() {
   const router = useRouter();
@@ -47,6 +48,7 @@ export function LoginForm() {
     setServerError('');
     try {
       await login(data.email, data.password, getDeviceName());
+      toast.success('Sesión iniciada con éxito');
       const from = params.get('from') ?? '/dashboard';
       router.replace(from);
     } catch (err: unknown) {
@@ -54,6 +56,7 @@ export function LoginForm() {
         (err as { response?: { data?: { message?: string } } })?.response?.data
           ?.message ?? 'Error al iniciar sesión. Verifica tus credenciales.';
       setServerError(message);
+      toast.error(message);
     }
   };
 

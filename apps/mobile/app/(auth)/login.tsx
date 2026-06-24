@@ -7,10 +7,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useAuthStore } from '../../src/store/auth.store';
+import { toast } from '../../src/store/toast.store';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -20,17 +22,20 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Ingresa tu correo y contraseña');
+      toast.warning('Ingresa tu correo y contraseña');
       return;
     }
+    console.log(`[Login] Intentando iniciar sesión para: ${email.trim().toLowerCase()}`);
     try {
       await login(email.trim().toLowerCase(), password);
-      router.replace('/(tabs)/route');
+      toast.success('Sesión iniciada con éxito');
+      router.replace('/route');
     } catch (err: unknown) {
+      console.error('[Login] Error durante el inicio de sesión:', err);
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? 'Credenciales inválidas';
-      Alert.alert('Error de acceso', message);
+          ?.message ?? 'Credenciales inválidas o error de conexión';
+      toast.error(message);
     }
   };
 
@@ -39,43 +44,59 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.card}>
+      {/* Prismatic Glowing Blobs */}
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#6366f1', top: '15%', left: '5%', width: 300, height: 300, borderRadius: 150 }]} />
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#f43f5e', bottom: '15%', right: '5%', width: 300, height: 300, borderRadius: 150 }]} />
+      <View className="liquid-blob" style={[styles.blob, { backgroundColor: '#06b6d4', top: '40%', right: '20%', width: 200, height: 200, borderRadius: 100 }]} />
+
+      <View className="glass-panel" style={styles.glassCard}>
         <Text style={styles.title}>Deluxnet</Text>
         <Text style={styles.subtitle}>Plataforma ISP Rural</Text>
 
-        <Text style={styles.label}>Correo electrónico</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="usuario@deluxnet.mx"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          value={email}
-          onChangeText={setEmail}
-        />
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Correo electrónico</Text>
+          <TextInput
+            className="liquid-input"
+            style={styles.input}
+            placeholder="usuario@deluxnet.mx"
+            placeholderTextColor="#64748b"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
 
-        <Text style={styles.label}>Contraseña</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="••••••••"
-          secureTextEntry
-          autoComplete="password"
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Contraseña</Text>
+          <TextInput
+            className="liquid-input"
+            style={styles.input}
+            placeholder="••••••••"
+            placeholderTextColor="#64748b"
+            secureTextEntry
+            autoComplete="password"
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
 
         <TouchableOpacity
+          className="liquid-button"
           style={[styles.button, isLoading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={isLoading}
           activeOpacity={0.8}
         >
-          <Text style={styles.buttonText}>
-            {isLoading ? 'Iniciando sesión…' : 'Iniciar sesión'}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Iniciar sesión</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => Alert.alert('Olvidé contraseña', 'Contacta al administrador')}>
+        <TouchableOpacity onPress={() => toast.info('Contacta al administrador del sistema')}>
           <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
       </View>
@@ -86,56 +107,93 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#090d16',
     justifyContent: 'center',
     padding: 20,
+    overflow: 'hidden',
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+  blob: {
+    position: 'absolute',
+    opacity: 0.18,
+    ...Platform.select({
+      web: {
+        filter: 'blur(80px)',
+      },
+      default: {
+        shadowOpacity: 0.8,
+        shadowRadius: 100,
+        shadowOffset: { width: 0, height: 0 },
+      },
+    }),
+  },
+  glassCard: {
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    borderRadius: 24,
     padding: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(16px)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 5,
+      },
+    }),
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#2563eb',
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#94a3b8',
     textAlign: 'center',
     marginBottom: 28,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  inputContainer: {
+    marginBottom: 16,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#cbd5e1',
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    marginBottom: 16,
-    backgroundColor: '#f9fafb',
+    color: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
   button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
+    backgroundColor: '#6366f1',
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 14,
+    marginTop: 12,
+    marginBottom: 16,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+      },
+    }),
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -146,7 +204,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   link: {
-    color: '#2563eb',
+    color: '#94a3b8',
     textAlign: 'center',
     fontSize: 13,
   },
