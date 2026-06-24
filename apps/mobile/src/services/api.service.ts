@@ -5,6 +5,7 @@ import { getAccessToken } from '../store/auth.store';
 import { Platform } from 'react-native';
 
 let BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
   'http://127.0.0.1:3001/api/v1';
 

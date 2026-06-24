@@ -16,6 +16,7 @@ interface ToastState {
 }
 
 export const useToastStore = create<ToastState>((set) => ({
+  toasts: [],
   show: (message, type = 'info', duration = 3500) => {
     const id = Math.random().toString(36).substring(2, 9);
     

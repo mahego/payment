@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ToastContainer from '../src/components/ToastContainer';
+import PWAInstallPrompt from '../src/components/PWAInstallPrompt';
 import { Platform } from 'react-native';
 
 const queryClient = new QueryClient({
@@ -15,6 +16,20 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize();
+
+    // Register PWA service worker on Web environments
+    if (Platform.OS === 'web' && 'serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then((reg) => {
+            console.log('[PWA] ServiceWorker registered with scope: ', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('[PWA] ServiceWorker registration failed: ', err);
+          });
+      });
+    }
   }, [initialize]);
 
   return (
@@ -79,6 +94,7 @@ export default function RootLayout() {
         <Stack.Screen name="customer-detail" options={{ headerShown: false }} />
       </Stack>
       <ToastContainer />
+      <PWAInstallPrompt />
     </QueryClientProvider>
   );
 }
