@@ -115,4 +115,14 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsBoolean()
   isNetworkSuspended?: boolean;
+
+  @ApiPropertyOptional({ example: 'zone-cuid-here' })
+  @IsOptional()
+  @IsString()
+  zoneId?: string;
+
+  @ApiPropertyOptional({ example: 'plan-cuid-here' })
+  @IsOptional()
+  @IsString()
+  planId?: string;
 }

@@ -1,28 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, use } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuthStore, hasMinRole } from '@/store/auth.store';
 import {
-  Users,
-  Search,
-  UserPlus,
-  ArrowRight,
-  ShieldCheck,
-  TrendingUp,
-  AlertTriangle,
+  ChevronLeft,
   Loader2,
-  CheckSquare,
-  Square as SquareIcon,
+  Users,
+  Calendar,
+  AlertTriangle,
   Play,
   Square,
   RefreshCw,
   FolderInput,
   Wifi,
-  Filter,
+  Trash2,
+  CheckSquare,
+  Square as SquareIcon,
+  HelpCircle,
+  Check,
 } from 'lucide-react';
+
+interface ZoneDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  billingCutoffDay: number | null;
+  active: boolean;
+  _count: {
+    customers: number;
+    plans: number;
+  };
+}
 
 interface CustomerRow {
   id: string;
@@ -33,10 +45,13 @@ interface CustomerRow {
   status: 'ACTIVO' | 'SUSPENDIDO' | 'MOROSO' | 'CANCELADO';
   currentBalance: string | number;
   billingCutoffDay: number;
-  signupDate: string;
   pppoeUsername: string | null;
-  zone?: { id: string; name: string } | null;
-  plan?: { id: string; name: string; speed: string } | null;
+  plan?: { name: string; speed: string } | null;
+}
+
+interface Plan {
+  id: string;
+  name: string;
 }
 
 interface ZoneOption {
@@ -44,29 +59,21 @@ interface ZoneOption {
   name: string;
 }
 
-interface PlanOption {
-  id: string;
-  name: string;
-  speed: string;
-}
-
-export default function CustomersPage() {
-  const { user } = useAuthStore();
+export default function ZoneDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const canCreate = hasMinRole(user?.role || 'VIEWER', 'SUPERVISOR');
+  const { user } = useAuthStore();
   const isSupervisor = hasMinRole(user?.role || 'VIEWER', 'SUPERVISOR');
-
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [zoneFilter, setZoneFilter] = useState<string>('');
-  const [planFilter, setPlanFilter] = useState<string>('');
+  const isAdmin = hasMinRole(user?.role || 'VIEWER', 'ADMIN');
 
   // Local state for checkboxes
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkMessage, setBulkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Bulk modals
+  // Bulk dropdown choices
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -76,39 +83,49 @@ export default function CustomersPage() {
   const [newZoneId, setNewZoneId] = useState<string>('');
   const [newPlanId, setNewPlanId] = useState<string>('');
 
-  // Fetch customers
-  const { data: customers, isLoading } = useQuery<CustomerRow[]>({
-    queryKey: ['customers', search, statusFilter, zoneFilter, planFilter],
-    queryFn: () =>
-      api
-        .get('/customers', {
-          params: {
-            query: search || undefined,
-            status: statusFilter || undefined,
-            zoneId: zoneFilter || undefined,
-            planId: planFilter || undefined,
-          },
-        })
-        .then((r) => r.data),
+  // Fetch Zone metadata
+  const { data: zone, isLoading: loadingZone } = useQuery<ZoneDetail>({
+    queryKey: ['zone', id],
+    queryFn: () => api.get(`/zones/${id}`).then((r) => r.data),
   });
 
-  // Fetch zones for filter
-  const { data: zones } = useQuery<ZoneOption[]>({
-    queryKey: ['zones-filter-list'],
+  // Fetch Zone customers
+  const { data: customers, isLoading: loadingCustomers } = useQuery<CustomerRow[]>({
+    queryKey: ['zone-customers', id],
+    queryFn: () => api.get(`/zones/${id}/customers`).then((r) => r.data),
+  });
+
+  // Fetch all zones (for reassigning zone)
+  const { data: allZones } = useQuery<ZoneOption[]>({
+    queryKey: ['zones-list'],
     queryFn: () => api.get('/zones').then((r) => r.data),
+    enabled: showZoneModal,
   });
 
-  // Fetch plans for filter
-  const { data: plans } = useQuery<PlanOption[]>({
-    queryKey: ['plans-filter-list'],
+  // Fetch all service plans (for reassigning plan)
+  const { data: allPlans } = useQuery<Plan[]>({
+    queryKey: ['plans-list'],
     queryFn: () => api.get('/service-plans').then((r) => r.data),
+    enabled: showPlanModal,
   });
 
-  // Calculate quick stats from full dataset
-  const totalCount = customers?.length ?? 0;
-  const activeCount = customers?.filter((c) => c.status === 'ACTIVO').length ?? 0;
-  const suspendedCount = customers?.filter((c) => c.status === 'SUSPENDIDO').length ?? 0;
-  const delinquentCount = customers?.filter((c) => c.status === 'MOROSO').length ?? 0;
+  // Toggle active status mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: (active: boolean) => api.patch(`/zones/${id}`, { active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['zone', id] });
+      queryClient.invalidateQueries({ queryKey: ['zones'] });
+    },
+  });
+
+  // Delete/Disable zone mutation (soft delete)
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/zones/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['zones'] });
+      router.replace('/zones');
+    },
+  });
 
   const toggleSelectAll = () => {
     if (!customers) return;
@@ -146,7 +163,8 @@ export default function CustomersPage() {
       setShowZoneModal(false);
       setShowPlanModal(false);
       // Refresh list
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['zone-customers', id] });
+      queryClient.invalidateQueries({ queryKey: ['zone', id] });
     } catch (e: any) {
       setBulkMessage({
         type: 'error',
@@ -157,124 +175,110 @@ export default function CustomersPage() {
     }
   };
 
-  const getStatusBadge = (status: CustomerRow['status']) => {
-    const styles = {
-      ACTIVO: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-      SUSPENDIDO: 'bg-amber-50 text-amber-700 border-amber-100',
-      MOROSO: 'bg-rose-50 text-rose-700 border-rose-100',
-      CANCELADO: 'bg-slate-100 text-slate-600 border-slate-200',
-    };
+  if (loadingZone) {
     return (
-      <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${styles[status]}`}>
-        <span className={`h-1.5 w-1.5 rounded-full ${
-          status === 'ACTIVO' ? 'bg-emerald-500' :
-          status === 'SUSPENDIDO' ? 'bg-amber-500' :
-          status === 'MOROSO' ? 'bg-rose-500' : 'bg-slate-400'
-        }`} />
-        {status}
-      </span>
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3 text-gray-500">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+          <p className="text-sm">Cargando detalles de la zona...</p>
+        </div>
+      </div>
     );
-  };
+  }
+
+  if (!zone) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-xl font-bold text-slate-800">Zona no encontrada</h2>
+        <Link href="/zones" className="text-indigo-600 font-semibold hover:underline mt-2 inline-block">
+          Volver a la lista de zonas
+        </Link>
+      </div>
+    );
+  }
+
+  // Count stats for customers in this zone
+  const activeCount = customers?.filter((c) => c.status === 'ACTIVO').length ?? 0;
+  const suspendedCount = customers?.filter((c) => c.status === 'SUSPENDIDO').length ?? 0;
+  const delinquentCount = customers?.filter((c) => c.status === 'MOROSO').length ?? 0;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Back button & Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Clientes</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Visualiza, filtra y administra las cuentas y estados de conexión.
-          </p>
-        </div>
-        {canCreate && (
+        <div className="flex items-center gap-3">
           <Link
-            href="/customers/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-premium hover:bg-indigo-700 active:scale-95"
+            href="/zones"
+            className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
           >
-            <UserPlus className="h-4 w-4" />
-            Registrar Cliente
+            <ChevronLeft className="h-5 w-5" />
           </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{zone.name}</h1>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  zone.active
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}
+              >
+                {zone.active ? 'Activo' : 'Inactivo'}
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm mt-1">{zone.description || 'Sin descripción.'}</p>
+          </div>
+        </div>
+
+        {/* Admin Actions */}
+        {isAdmin && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => toggleActiveMutation.mutate(!zone.active)}
+              className={`px-4 py-2 text-sm font-semibold rounded-xl border transition ${
+                zone.active
+                  ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  : 'bg-emerald-600 text-white border-transparent hover:bg-emerald-700'
+              }`}
+            >
+              {zone.active ? 'Desactivar Zona' : 'Activar Zona'}
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('¿Estás seguro de que deseas eliminar (soft delete) esta zona?')) {
+                  deleteMutation.mutate();
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 transition"
+            >
+              <Trash2 className="w-4 h-4" />
+              Eliminar
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         {[
-          { label: 'Total Clientes', value: totalCount, icon: Users, bg: 'bg-indigo-50 text-indigo-600' },
-          { label: 'Activos', value: activeCount, icon: ShieldCheck, bg: 'bg-emerald-50 text-emerald-600' },
+          { label: 'Total Clientes', value: customers?.length ?? 0, icon: Users, bg: 'bg-indigo-50 text-indigo-600' },
+          { label: 'Activos', value: activeCount, icon: Users, bg: 'bg-emerald-50 text-emerald-600' },
           { label: 'Suspendidos', value: suspendedCount, icon: AlertTriangle, bg: 'bg-amber-50 text-amber-600' },
-          { label: 'Morosos', value: delinquentCount, icon: TrendingUp, bg: 'bg-rose-50 text-rose-600' },
+          { label: 'Morosos', value: delinquentCount, icon: AlertTriangle, bg: 'bg-rose-50 text-rose-600' },
         ].map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div key={idx} className="glass-card glass-shine bg-white/75 border-white/40 p-4 shadow-glass transition-all hover:shadow-glass-lg hover:-translate-y-0.5 duration-300">
+            <div key={idx} className="glass-card bg-white border border-slate-200/50 p-4 shadow-sm rounded-xl">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{stat.label}</span>
                 <span className={`rounded-xl p-1.5 ${stat.bg}`}>
                   <Icon className="h-4 w-4" />
                 </span>
               </div>
-              <p className="text-2xl font-bold text-slate-900 mt-2">
-                {isLoading ? <Loader2 className="h-5 w-5 animate-spin text-slate-300" /> : stat.value}
-              </p>
+              <p className="text-2xl font-bold text-slate-900 mt-2">{stat.value}</p>
             </div>
           );
         })}
-      </div>
-
-      {/* Filters & Search */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre, teléfono, email o PPPoE..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md pl-10 pr-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
-          />
-        </div>
-        
-        {/* Status Filter */}
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:bg-white/90"
-        >
-          <option value="">Todos los estados</option>
-          <option value="ACTIVO">ACTIVO</option>
-          <option value="SUSPENDIDO">SUSPENDIDO</option>
-          <option value="MOROSO">MOROSO</option>
-          <option value="CANCELADO">CANCELADO</option>
-        </select>
-
-        {/* Zone Filter */}
-        <select
-          value={zoneFilter}
-          onChange={(e) => setZoneFilter(e.target.value)}
-          className="rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:bg-white/90"
-        >
-          <option value="">Todas las zonas</option>
-          {zones?.map((z) => (
-            <option key={z.id} value={z.id}>
-              {z.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Plan Filter */}
-        <select
-          value={planFilter}
-          onChange={(e) => setPlanFilter(e.target.value)}
-          className="rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:bg-white/90"
-        >
-          <option value="">Todos los planes</option>
-          {plans?.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} ({p.speed})
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Bulk action message */}
@@ -293,7 +297,7 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Floating Bulk Actions Bar */}
+      {/* Floating/Sticky Bulk Actions Bar */}
       {selectedIds.length > 0 && isSupervisor && (
         <div className="sticky top-4 z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl border border-indigo-100 bg-indigo-50/95 backdrop-blur shadow-lg animate-fade-in">
           <div className="flex items-center gap-2">
@@ -332,7 +336,7 @@ export default function CustomersPage() {
               className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
             >
               <FolderInput className="h-3.5 w-3.5" />
-              Asignar Zona
+              Cambiar Zona
             </button>
             <button
               onClick={() => setShowPlanModal(true)}
@@ -345,40 +349,27 @@ export default function CustomersPage() {
         </div>
       )}
 
-      {/* Main Customers List */}
-      {isLoading ? (
-        <div className="flex h-60 items-center justify-center rounded-2xl border border-slate-200 bg-white">
-          <div className="flex flex-col items-center gap-3 text-slate-400">
-            <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
-            <p className="text-sm">Buscando clientes en la base de datos...</p>
-          </div>
+      {/* Customers List inside Zone */}
+      <div className="glass-card bg-white border border-slate-200/60 shadow-sm rounded-2xl p-0 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">Clientes del Sector</h2>
+          <span className="text-xs text-slate-400">Total: {customers?.length || 0}</span>
         </div>
-      ) : !customers || customers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 border-dashed bg-white p-12 text-center">
-          <div className="rounded-full bg-slate-100 p-4 text-slate-400">
-            <Users className="h-8 w-8" />
+
+        {loadingCustomers ? (
+          <div className="flex h-40 items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-indigo-600" />
           </div>
-          <h3 className="mt-4 text-lg font-semibold text-slate-900">No se encontraron clientes</h3>
-          <p className="mt-1 text-sm text-slate-500 max-w-sm">
-            {search || statusFilter || zoneFilter || planFilter
-              ? 'Intenta modificar tus filtros o términos de búsqueda para encontrar lo que necesitas.'
-              : 'Empieza registrando tu primer cliente en el sistema para comenzar a operar.'}
-          </p>
-          {canCreate && !search && !statusFilter && !zoneFilter && !planFilter && (
-            <Link
-              href="/customers/new"
-              className="mt-6 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition"
-            >
-              Registrar primer cliente
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="overflow-hidden glass-card glass-shine bg-white/70 border-white/40 shadow-glass p-0">
+        ) : !customers || customers.length === 0 ? (
+          <div className="text-center py-12 text-slate-400">
+            <Users className="w-10 h-10 mx-auto text-slate-300 mb-3" />
+            <p className="text-sm">No hay clientes asignados a este sector.</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-100/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-xs font-semibold uppercase tracking-wider text-slate-500">
                   <th className="w-12 px-6 py-4">
                     <button
                       onClick={toggleSelectAll}
@@ -392,9 +383,8 @@ export default function CustomersPage() {
                     </button>
                   </th>
                   <th className="px-6 py-4">Cliente</th>
-                  <th className="px-6 py-4">Sector / Plan</th>
+                  <th className="px-6 py-4">Plan Actual</th>
                   <th className="px-6 py-4">Contacto</th>
-                  <th className="px-6 py-4">Corte</th>
                   <th className="px-6 py-4">Saldo</th>
                   <th className="px-6 py-4">Estado</th>
                   <th className="px-6 py-4"></th>
@@ -403,8 +393,8 @@ export default function CustomersPage() {
               <tbody className="divide-y divide-slate-100 text-sm">
                 {customers.map((c) => {
                   const isChecked = selectedIds.includes(c.id);
-                  const initial = c.firstName[0].toUpperCase();
                   const balance = Number(c.currentBalance);
+                  const initial = c.firstName[0].toUpperCase();
                   return (
                     <tr
                       key={c.id}
@@ -422,7 +412,7 @@ export default function CustomersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 font-bold text-indigo-600">
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 font-bold text-indigo-600 text-xs">
                             {initial}
                           </div>
                           <div>
@@ -436,33 +426,45 @@ export default function CustomersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-slate-900 font-semibold">{c.zone?.name || 'Sin Zona'}</div>
-                        <div className="text-xs text-slate-400">
-                          {c.plan ? `${c.plan.name} (${c.plan.speed})` : 'Sin Plan'}
-                        </div>
+                        {c.plan ? (
+                          <div>
+                            <span className="font-medium text-slate-800">{c.plan.name}</span>
+                            <div className="text-xs text-slate-400">{c.plan.speed}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">Ninguno</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-slate-950 font-medium">{c.phone || '—'}</div>
+                        <div className="text-slate-900 font-medium">{c.phone || '—'}</div>
                         <div className="text-xs text-slate-400">{c.email || '—'}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
-                          Día {c.billingCutoffDay}
-                        </span>
                       </td>
                       <td className="px-6 py-4 font-semibold">
                         <span className={balance > 0 ? 'text-rose-600' : 'text-slate-900'}>
                           ${balance.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">{getStatusBadge(c.status)}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                            c.status === 'ACTIVO'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : c.status === 'SUSPENDIDO'
+                              ? 'bg-amber-50 text-amber-700 border-amber-100'
+                              : c.status === 'MOROSO'
+                              ? 'bg-rose-50 text-rose-700 border-rose-100'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <Link
                           href={`/customers/${c.id}`}
-                          className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50"
+                          className="text-xs font-bold text-indigo-600 hover:underline"
                         >
-                          Ver Detalles
-                          <ArrowRight className="h-3 w-3" />
+                          Ver
                         </Link>
                       </td>
                     </tr>
@@ -471,10 +473,10 @@ export default function CustomersPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Bulk status update modal */}
+      {/* Bulk action modals */}
       {showStatusModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
@@ -523,7 +525,7 @@ export default function CustomersPage() {
               className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"
             >
               <option value="">Selecciona una zona...</option>
-              {zones?.map((z) => (
+              {allZones?.map((z) => (
                 <option key={z.id} value={z.id}>
                   {z.name}
                 </option>
@@ -560,9 +562,9 @@ export default function CustomersPage() {
               className="w-full rounded-xl border border-slate-200 p-2.5 text-sm"
             >
               <option value="">Selecciona un plan...</option>
-              {plans?.map((p) => (
+              {allPlans?.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} ({p.speed})
+                  {p.name}
                 </option>
               ))}
             </select>

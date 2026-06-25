@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,10 +10,33 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useState } from 'react';
 
+interface ZoneOption {
+  id: string;
+  name: string;
+}
+
+interface PlanOption {
+  id: string;
+  name: string;
+  speed: string;
+}
+
 export default function NewCustomerPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Query Zones
+  const { data: zones } = useQuery<ZoneOption[]>({
+    queryKey: ['zones-options'],
+    queryFn: () => api.get('/zones').then((r) => r.data),
+  });
+
+  // Query Plans
+  const { data: plans } = useQuery<PlanOption[]>({
+    queryKey: ['plans-options'],
+    queryFn: () => api.get('/service-plans').then((r) => r.data),
+  });
 
   const {
     register,
@@ -33,6 +56,8 @@ export default function NewCustomerPage() {
       currentBalance: 0,
       signupDate: new Date().toISOString().slice(0, 10),
       billingCutoffDay: 5,
+      zoneId: '',
+      planId: '',
     },
   });
 
@@ -47,6 +72,8 @@ export default function NewCustomerPage() {
         municipality: values.municipality || undefined,
         pppoeUsername: values.pppoeUsername || undefined,
         signupDate: new Date(values.signupDate).toISOString(),
+        zoneId: values.zoneId || undefined,
+        planId: values.planId || undefined,
       };
       return api.post('/customers', payload);
     },
@@ -267,6 +294,42 @@ export default function NewCustomerPage() {
                 {errors.signupDate && (
                   <p className="text-rose-500 text-xs mt-1">{errors.signupDate.message}</p>
                 )}
+              </div>
+
+              {/* Zone ID */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Sector / Zona de Cobertura
+                </label>
+                <select
+                  {...register('zoneId')}
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
+                >
+                  <option value="">Sin Asignar</option>
+                  {zones?.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Plan ID */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Plan de Internet
+                </label>
+                <select
+                  {...register('planId')}
+                  className="w-full rounded-xl border border-slate-200/60 bg-white/60 backdrop-blur-md px-4 py-2.5 text-sm outline-none transition-premium focus:border-indigo-500 focus:bg-white/90 focus:ring-4 focus:ring-indigo-500/10"
+                >
+                  <option value="">Sin Plan Asignado</option>
+                  {plans?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.speed})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

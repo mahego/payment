@@ -24,6 +24,8 @@ export const customerSchema = z.object({
     .int()
     .min(1, 'El día mínimo es 1')
     .max(28, 'El día máximo es 28'),
+  zoneId: z.string().optional().or(z.literal('')),
+  planId: z.string().optional().or(z.literal('')),
 });
 
 export type CustomerFormValues = z.infer<typeof customerSchema>;

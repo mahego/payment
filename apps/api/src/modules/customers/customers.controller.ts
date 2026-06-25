@@ -19,6 +19,7 @@ import { Role, CustomerStatus } from '@prisma/client';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { BulkActionDto } from './dto/bulk-action.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { NetworkActionsService } from '../network-actions/network-actions.service';
 
@@ -43,11 +44,15 @@ export class CustomersController {
   @ApiOperation({ summary: 'List all customers' })
   @ApiQuery({ name: 'query', required: false, type: String, description: 'Search term' })
   @ApiQuery({ name: 'status', required: false, enum: CustomerStatus })
+  @ApiQuery({ name: 'zoneId', required: false, type: String })
+  @ApiQuery({ name: 'planId', required: false, type: String })
   findAll(
     @Query('query') query?: string,
     @Query('status') status?: CustomerStatus,
+    @Query('zoneId') zoneId?: string,
+    @Query('planId') planId?: string,
   ) {
-    return this.service.findAll({ query, status });
+    return this.service.findAll({ query, status, zoneId, planId });
   }
 
   @Get(':id')
@@ -141,5 +146,12 @@ export class CustomersController {
       customer.mikrotikProfileId,
       customer.id
     );
+  }
+
+  @Post('bulk-action')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.SUPERVISOR)
+  @ApiOperation({ summary: 'Apply action to multiple customers in batch' })
+  bulkAction(@Body() dto: BulkActionDto) {
+    return this.service.bulkAction(dto);
   }
 }

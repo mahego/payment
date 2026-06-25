@@ -18,6 +18,9 @@ import {
   Server,
   FlaskConical,
   Activity,
+  MapPin,
+  Wifi,
+  LifeBuoy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuthStore, hasMinRole, type Role } from '@/store/auth.store';
@@ -25,6 +28,9 @@ import { useAuthStore, hasMinRole, type Role } from '@/store/auth.store';
 const NAV: Array<{ label: string; href: string; minRole: Role; icon: LucideIcon }> = [
   { label: 'Dashboard', href: '/dashboard', minRole: 'VIEWER', icon: LayoutDashboard },
   { label: 'Clientes', href: '/customers', minRole: 'VIEWER', icon: Users },
+  { label: 'Zonas / Sectores', href: '/zones', minRole: 'VIEWER', icon: MapPin },
+  { label: 'Planes de Internet', href: '/service-plans', minRole: 'VIEWER', icon: Wifi },
+  { label: 'Tickets Soporte', href: '/tickets', minRole: 'TECHNICIAN', icon: LifeBuoy },
   { label: 'Pagos', href: '/payments', minRole: 'VIEWER', icon: Wallet },
   { label: 'Cobradores', href: '/collectors', minRole: 'SUPERVISOR', icon: UserCog },
   { label: 'Usuarios', href: '/users', minRole: 'ADMIN', icon: Shield },

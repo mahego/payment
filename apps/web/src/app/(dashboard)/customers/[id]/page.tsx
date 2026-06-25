@@ -66,6 +66,8 @@ interface CustomerDetail {
     name: string;
     suspensionType: string;
   } | null;
+  zone?: { id: string; name: string } | null;
+  plan?: { id: string; name: string; price: string | number; speed: string } | null;
 }
 
 export default function CustomerDetailPage() {
@@ -332,6 +334,43 @@ export default function CustomerDetailPage() {
                   <div>
                     <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Corte de Facturación</p>
                     <p className="font-semibold text-slate-900">Día {customer.billingCutoffDay} de cada mes</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <span className="rounded-lg bg-indigo-50 p-2 text-indigo-500">
+                    <MapPin className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Sector / Zona</p>
+                    <p className="font-semibold text-slate-900">
+                      {customer.zone ? (
+                        <Link href={`/zones/${customer.zone.id}`} className="text-indigo-600 hover:underline font-bold">
+                          {customer.zone.name}
+                        </Link>
+                      ) : (
+                        <span className="text-slate-400">Sin asignar</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <span className="rounded-lg bg-purple-50 p-2 text-purple-500">
+                    <Wifi className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Plan Contratado</p>
+                    <p className="font-semibold text-slate-900">
+                      {customer.plan ? (
+                        <span>
+                          {customer.plan.name} ({customer.plan.speed})
+                          <span className="text-indigo-600 ml-1.5 font-bold">${Number(customer.plan.price).toFixed(2)}</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Sin plan asignado</span>
+                      )}
+                    </p>
                   </div>
                 </div>
 
